@@ -1,0 +1,255 @@
+# Unitree Robot Control Suite - Git Ignore File
+# Generated: October 24, 2025
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.backup
+*.bak
+*.tmp
+*.temp
+
+# Log files
+*.log
+
+# Configuration files with sensitive data
+config.ini
+secrets.json
+api_keys.txt
+.unitree_g1_api_key
+
+# Robot-specific files
+robot_config.yaml
+camera_config.yaml
+
+# Temporary files
+temp/
+tmp/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Documentation build
+docs/build/
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# Node.js (if any frontend components)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ROS2 specific
+install/
+build/
+log/
+
+# Unitree SDK build files
+unitree_sdk2/build/
+unitree_sdk2_python/build/
+
+# CycloneDDS build files
+cyclonedx_ws/build/
+cyclonedx_ws/install/
+cyclonedx_ws/log/
+
+# MuJoCo files (if included)
+*.mjb
+*.mjcf
+
+# Camera recordings
+*.avi
+*.mp4
+*.mov
+*.mkv
+
+# Image captures
+screenshots/
+captures/
+*.png
+*.jpg
+*.jpeg
+
+# Serial port logs
+serial_*.log
+inspire_hand_*.log
+
+# Network configuration backups
+network_backup_*
+wifi_backup_*
+
+# SSH keys
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Git
+.git/
+.gitignore.bak
+
+# Archive files
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# System files
+.fuse_hidden*
+.nfs*
+
+# Application specific
+UnitreeG1Menu.desktop.bak
+*.desktop.bak
+
+# Livox viewer files
+livox_*.log
+lidar_*.log
+
+# Simulation files
+simulation_*.log
+mujoco_*.log
