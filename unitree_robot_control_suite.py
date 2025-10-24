@@ -12,10 +12,9 @@ from gi.repository import Gtk, Gdk, GLib
 
 # Paths
 DESKTOP = os.path.expanduser('~/Desktop')
-LIVOX_SH = '/opt/livoxviewer2/LivoxViewer2.sh'
 SDK_ARM_DEMO = 'cd ~/unitree_sdk2_python/example/g1/high_level && DDS_DOMAIN=0 DDS_INTERFACE=enp3s0 DDS_PARTICIPANT_INDEX=0 python3 g1_arm7_sdk_dds_example.py; exec bash'
 CAMERA_VIEW = 'source /opt/ros/humble/setup.bash; source ~/unitree_ros2/cyclonedds_ws/install/setup.bash; source ~/unitree_ros2/setup.sh; ros2 run rqt_image_view rqt_image_view /camera/image_raw; exec bash'
-INSPIRE_HAND_CMD = ["gnome-terminal", "--", "~/Desktop/connect_inspire_hand.sh"]
+INSPIRE_HAND_CMD = ["gnome-terminal", "--", os.path.join(os.path.dirname(__file__), "connect_inspire_hand.sh")]
 
 # CSS for modern look
 CSS = b'''
@@ -78,7 +77,7 @@ class ProgressDialog(Gtk.Dialog):
 
 class MainMenu(Gtk.Window):
     def __init__(self):
-        Gtk.Window.__init__(self, title="Unitree G1 Menu")
+        Gtk.Window.__init__(self, title="Unitree Robot Control Suite")
         self.set_border_width(24)
         self.set_default_size(400, 350)
         self.set_position(Gtk.WindowPosition.CENTER)
@@ -87,11 +86,8 @@ class MainMenu(Gtk.Window):
         vbox.set_homogeneous(False)
         self.add(vbox)
         # Branding
-        company_label = Gtk.Label()
-        company_label.set_markup('<span size="xx-large" weight="bold" foreground="#00FFD0"></span>')
-        vbox.pack_start(company_label, False, False, 0)
         title_label = Gtk.Label()
-        title_label.set_markup('<span size="x-large" weight="bold" foreground="#00BFFF">Unitree Robotics Launcher</span>')
+        title_label.set_markup('<span size="x-large" weight="bold" foreground="#00BFFF">Unitree Robot Control Suite</span>')
         vbox.pack_start(title_label, False, False, 0)
         creator_label = Gtk.Label()
         creator_label.set_markup('<span size="medium" foreground="#AAAAAA">by Michael</span>')

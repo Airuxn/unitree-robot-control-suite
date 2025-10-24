@@ -127,7 +127,132 @@ cd "$WORKSPACE_DIR"
 
 print_status "Workspace directory created"
 
-# Step 4: Unitree SDK2 Installation
+# Step 4: Install Required SDKs
+echo ""
+echo "📦 Step 4: Installing Required SDKs..."
+echo "====================================="
+
+print_info "Installing SDKs to exact paths your app expects..."
+
+# Step 5: Install Unitree SDK2 (C++) (CRITICAL: App expects ~/unitree_sdk2/)
+echo ""
+echo "🔧 Step 5: Installing Unitree SDK2 (C++)..."
+echo "=========================================="
+
+print_info "CRITICAL: App expects C++ SDK at ~/unitree_sdk2/"
+
+if [ -d "$HOME/unitree_sdk2" ]; then
+    print_status "✓ Unitree SDK2 (C++) already exists at ~/unitree_sdk2"
+else
+    print_info "Installing Unitree SDK2 (C++) to ~/unitree_sdk2..."
+    cd "$HOME"
+    git clone https://github.com/unitreerobotics/unitree_sdk2.git
+    cd unitree_sdk2
+    mkdir build && cd build
+    cmake ..
+    make -j$(nproc)
+    sudo make install
+    print_status "✓ Unitree SDK2 (C++) installed to ~/unitree_sdk2"
+fi
+
+# Step 6: Install Unitree ROS2 (CRITICAL: App expects ~/unitree_ros2/)
+echo ""
+echo "🤖 Step 6: Installing Unitree ROS2..."
+echo "===================================="
+
+print_info "CRITICAL: App expects ROS2 workspace at ~/unitree_ros2/"
+
+if [ -d "$WORKSPACE_DIR" ] && [ "$(ls -A $WORKSPACE_DIR)" ]; then
+    print_status "✓ Unitree ROS2 workspace already exists at ~/unitree_ros2"
+else
+    print_info "Installing Unitree ROS2 workspace to ~/unitree_ros2..."
+    cd "$WORKSPACE_DIR"
+    git clone https://github.com/unitreerobotics/unitree_ros2.git .
+    colcon build
+    print_status "✓ Unitree ROS2 workspace installed to ~/unitree_ros2"
+fi
+
+# Step 7: Install Unitree SDK2 Python (CRITICAL: App expects ~/unitree_sdk2_python/)
+echo ""
+echo "🐍 Step 7: Installing Unitree SDK2 Python..."
+echo "==========================================="
+
+print_info "CRITICAL: App expects SDK2 Python at ~/unitree_sdk2_python/"
+
+if [ -d "$HOME/unitree_sdk2_python" ]; then
+    print_status "✓ Unitree SDK2 Python already exists at ~/unitree_sdk2_python"
+else
+    print_info "Installing Unitree SDK2 Python to ~/unitree_sdk2_python..."
+    cd "$HOME"
+    git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
+    cd unitree_sdk2_python
+    pip3 install -e .
+    print_status "✓ Unitree SDK2 Python installed to ~/unitree_sdk2_python"
+fi
+
+# Step 8: Install Unitree MuJoCo (CRITICAL: App expects ~/unitree_mujoco/)
+echo ""
+echo "🎮 Step 8: Installing Unitree MuJoCo..."
+echo "======================================"
+
+print_info "CRITICAL: App expects MuJoCo at ~/unitree_mujoco/"
+
+if [ -d "$HOME/unitree_mujoco" ]; then
+    print_status "✓ Unitree MuJoCo already exists at ~/unitree_mujoco"
+else
+    print_info "Installing Unitree MuJoCo to ~/unitree_mujoco..."
+    cd "$HOME"
+    git clone https://github.com/unitreerobotics/unitree_mujoco.git
+    cd unitree_mujoco
+    
+    print_info "Installing MuJoCo dependencies..."
+    sudo apt install -y libgl1-mesa-glx libglfw3 libglfw3-dev libgles2-mesa-dev
+    
+    print_info "Building C++ simulator..."
+    cd simulate
+    mkdir build && cd build
+    cmake ..
+    make -j$(nproc)
+    cd "$HOME/unitree_mujoco"
+    
+    print_info "Building Python simulator..."
+    cd simulate_python
+    pip3 install -e .
+    print_status "✓ Unitree MuJoCo installed to ~/unitree_mujoco"
+fi
+
+# Step 9: Install CycloneDDS (CRITICAL: App expects cyclonedds_ws, not cyclonedx!)
+echo ""
+echo "🌐 Step 9: Installing CycloneDDS..."
+echo "=================================="
+
+print_info "CRITICAL: App expects CycloneDDS at ~/unitree_ros2/cyclonedds_ws/"
+
+if [ -d "$WORKSPACE_DIR/cyclonedds_ws" ]; then
+    print_status "✓ CycloneDDS already exists at ~/unitree_ros2/cyclonedds_ws"
+else
+    print_info "Installing CycloneDDS to ~/unitree_ros2/cyclonedds_ws..."
+    cd "$WORKSPACE_DIR"
+    git clone https://github.com/eclipse-cyclonedx/cyclonedx.git cyclonedds_ws
+    cd cyclonedds_ws
+    colcon build
+    print_status "✓ CycloneDDS installed to ~/unitree_ros2/cyclonedds_ws"
+fi
+
+# Step 10: Python Dependencies
+echo ""
+echo "🐍 Step 10: Installing Python Dependencies..."
+echo "============================================"
+
+print_info "Installing Python packages..."
+pip3 install -r requirements.txt
+
+print_info "Installing additional packages..."
+pip3 install matplotlib scipy pillow requests
+
+print_status "Python dependencies installed"
+
+# Step 5: Unitree SDK2 Installation
 echo ""
 echo "🔧 Step 4: Installing Unitree SDK2..."
 echo "====================================="
@@ -169,10 +294,31 @@ else
     print_status "Unitree SDK2 Python installed successfully"
 fi
 
-# Step 6: CycloneDDS Installation
+# Step 6: MuJoCo Installation
 echo ""
-echo "🌪️  Step 6: Installing CycloneDDS..."
-echo "====================================="
+echo "🎮 Step 6: Installing MuJoCo Simulation..."
+echo "=========================================="
+
+if [ -d "unitree_mujoco" ]; then
+    print_info "Installing MuJoCo dependencies..."
+    sudo apt install -y libgl1-mesa-glx libglfw3 libglfw3-dev libgles2-mesa-dev
+    
+    print_info "Building C++ simulator (recommended)..."
+    cd unitree_mujoco/simulate
+    mkdir build && cd build
+    cmake ..
+    make -j$(nproc)
+    cd "$WORKSPACE_DIR"
+    
+    print_info "Building Python simulator (optional)..."
+    cd unitree_mujoco/simulate_python
+    pip3 install -e .
+    cd "$WORKSPACE_DIR"
+    
+    print_status "MuJoCo simulation installed successfully"
+else
+    print_error "Unitree MuJoCo submodule not found"
+fi
 
 cd "$WORKSPACE_DIR"
 
@@ -189,9 +335,9 @@ else
     print_status "CycloneDDS installed successfully"
 fi
 
-# Step 7: Python Dependencies
+# Step 8: Python Dependencies
 echo ""
-echo "📦 Step 7: Installing Python Dependencies..."
+echo "📦 Step 8: Installing Python Dependencies..."
 echo "============================================"
 
 # Install from requirements.txt if it exists
@@ -215,9 +361,9 @@ fi
 
 print_status "Python dependencies installed successfully"
 
-# Step 8: Inspire Hand Installation
+# Step 9: Inspire Hand Installation
 echo ""
-echo "🤖 Step 8: Installing Inspire Hand Module..."
+echo "🤖 Step 9: Installing Inspire Hand Module..."
 echo "============================================"
 
 # Check if inspire_hand directory exists in current project
@@ -235,9 +381,9 @@ else
     print_info "You can install it manually later if needed"
 fi
 
-# Step 9: Environment Setup
+# Step 10: Environment Setup
 echo ""
-echo "🌍 Step 9: Setting up Environment..."
+echo "🌍 Step 10: Setting up Environment..."
 echo "===================================="
 
 # Create environment setup script
@@ -256,19 +402,19 @@ if [ -f /opt/ros/humble/setup.bash ]; then
 fi
 
 # Unitree SDK2 Environment
-if [ -d ~/unitree_ros2/unitree_sdk2 ]; then
-    export UNITREE_SDK2_PATH=~/unitree_ros2/unitree_sdk2
+if [ -d ~/unitree_sdk2 ]; then
+    export UNITREE_SDK2_PATH=~/unitree_sdk2
     echo "✅ Unitree SDK2 path set"
 fi
 
-if [ -d ~/unitree_ros2/unitree_sdk2_python ]; then
-    export UNITREE_SDK2_PYTHON_PATH=~/unitree_ros2/unitree_sdk2_python
+if [ -d ~/unitree_sdk2_python ]; then
+    export UNITREE_SDK2_PYTHON_PATH=~/unitree_sdk2_python
     echo "✅ Unitree SDK2 Python path set"
 fi
 
 # CycloneDDS Environment
-if [ -f ~/unitree_ros2/cyclonedx_ws/install/setup.bash ]; then
-    source ~/unitree_ros2/cyclonedx_ws/install/setup.bash
+if [ -f ~/unitree_ros2/cyclonedds_ws/install/setup.bash ]; then
+    source ~/unitree_ros2/cyclonedds_ws/install/setup.bash
     echo "✅ CycloneDDS sourced"
 fi
 
@@ -290,9 +436,9 @@ fi
 
 print_status "Environment setup completed"
 
-# Step 10: Verification
+# Step 11: Verification
 echo ""
-echo "🔍 Step 10: Verifying Installation..."
+echo "🔍 Step 11: Verifying Installation..."
 echo "====================================="
 
 # Check Python packages

@@ -1,8 +1,14 @@
 # Unitree Robot Control Suite
 
+> ⚠️ **UNDER CONSTRUCTION** ⚠️  
+> This application is currently under active development. Some features may be incomplete or subject to change. Use at your own discretion.
+
+
 **Professional Robot Control Interface for Unitree G1 and GO2W Robots**
 
 A comprehensive GUI application for controlling Unitree robots, featuring camera streaming, robotic hand control, autonomous navigation, and SDK integration.
+
+*Developed by Michael*
 
 ---
 
@@ -16,6 +22,32 @@ A comprehensive GUI application for controlling Unitree robots, featuring camera
 - **📊 Simulation Support**: MuJoCo simulation environment
 - **🌐 Network Management**: WiFi and Ethernet connection management
 - **📱 Modern GUI**: Professional GTK3 interface with custom styling
+
+---
+
+## 🔗 SDK Integration
+
+This repository references the official Unitree SDKs:
+
+- **Unitree SDK2 (C++)**: [unitreerobotics/unitree_sdk2](https://github.com/unitreerobotics/unitree_sdk2)
+- **Unitree SDK2 Python**: [unitreerobotics/unitree_sdk2_python](https://github.com/unitreerobotics/unitree_sdk2_python)
+- **Unitree ROS2**: [unitreerobotics/unitree_ros2](https://github.com/unitreerobotics/unitree_ros2)
+- **Unitree MuJoCo**: [unitreerobotics/unitree_mujoco](https://github.com/unitreerobotics/unitree_mujoco)
+
+## ⚠️ CRITICAL INSTALLATION REQUIREMENTS
+
+**Your app has specific hardcoded paths that MUST be followed exactly:**
+
+- **Unitree SDK2 (C++)**: `~/unitree_sdk2/`
+- **Unitree SDK2 Python**: `~/unitree_sdk2_python/`
+- **Unitree ROS2**: `~/unitree_ros2/`
+- **Unitree MuJoCo**: `~/unitree_mujoco/`
+- **CycloneDDS**: `~/unitree_ros2/cyclonedds_ws/`
+- **Unitree G1 Autonomous**: `~/unitree-g1-autonomous/`
+- **ROS2 Humble**: `/opt/ros/humble/setup.bash`
+- **Inspire Hand**: Must be in app directory (`inspire_hand/`)
+
+**The `install.sh` script installs everything to the exact paths your app expects.**
 
 ---
 
@@ -78,63 +110,92 @@ echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### Step 3: Unitree SDK2 Installation
+### Step 3: Unitree SDK2 (C++) Installation (CRITICAL PATH!)
 
-**⚠️ CRITICAL: This is the most important step - ALL paths depend on this installation!**
+**⚠️ CRITICAL: App expects C++ SDK at ~/unitree_sdk2/**
 
 ```bash
-# Create workspace directory
-mkdir -p ~/unitree_ros2
-cd ~/unitree_ros2
-
-# Clone Unitree SDK2 (C++ version)
+# CRITICAL: Install C++ SDK to ~/unitree_sdk2/ as expected by the app
+cd ~
 git clone https://github.com/unitreerobotics/unitree_sdk2.git
 cd unitree_sdk2
 mkdir build && cd build
 cmake ..
 make -j$(nproc)
 sudo make install
+```
 
-# Clone Unitree SDK2 Python bindings
-cd ~/unitree_ros2
-git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
-cd unitree_sdk2_python
-pip3 install -e .
+**Official Repository**: [unitreerobotics/unitree_sdk2](https://github.com/unitreerobotics/unitree_sdk2)
 
-# Install CycloneDDS (required for ROS2 communication)
+### Step 4: Unitree ROS2 Installation (CRITICAL PATH!)
+
+**⚠️ CRITICAL: App expects ROS2 workspace at ~/unitree_ros2/**
+
+```bash
+# CRITICAL: Install ROS2 workspace to ~/unitree_ros2/ as expected by the app
 cd ~/unitree_ros2
-git clone https://github.com/eclipse-cyclonedx/cyclonedx.git cyclonedx_ws
-cd cyclonedx_ws
+git clone https://github.com/unitreerobotics/unitree_ros2.git .
 colcon build
 ```
 
-**Expected Directory Structure After Installation:**
-```
-~/unitree_ros2/
-├── unitree_sdk2/           # C++ SDK
-│   ├── build/bin/          # Executable binaries
-│   └── example/            # C++ examples
-├── unitree_sdk2_python/    # Python SDK
-│   └── example/            # Python examples
-└── cyclonedx_ws/           # CycloneDDS workspace
-    └── install/            # Built packages
-```
+**Official Repository**: [unitreerobotics/unitree_ros2](https://github.com/unitreerobotics/unitree_ros2)
 
-### Step 4: Additional Tools Installation
+### Step 5: Unitree SDK2 Python Installation (CRITICAL PATH!)
+
+**⚠️ CRITICAL: App expects SDK2 Python at ~/unitree_sdk2_python/**
 
 ```bash
-# Install Livox Viewer (for LiDAR visualization)
-# Download from: https://www.livoxtech.com/downloads
-# Install to: /opt/livoxviewer2/
-
-# Install MuJoCo (for simulation)
-mkdir -p ~/unitree_mujoco
-cd ~/unitree_mujoco
-# Download MuJoCo from: https://mujoco.org/download
-# Extract and build according to MuJoCo documentation
+# CRITICAL: Install to ~/unitree_sdk2_python/ as expected by the app
+cd ~
+git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
+cd unitree_sdk2_python
+pip3 install -e .
 ```
 
-### Step 5: Python Dependencies
+**Official Repository**: [unitreerobotics/unitree_sdk2_python](https://github.com/unitreerobotics/unitree_sdk2_python)
+
+### Step 6: Unitree MuJoCo Installation (CRITICAL PATH!)
+
+**⚠️ CRITICAL: App expects MuJoCo at ~/unitree_mujoco/**
+
+```bash
+# CRITICAL: Install to ~/unitree_mujoco/ as expected by the app
+cd ~
+git clone https://github.com/unitreerobotics/unitree_mujoco.git
+cd unitree_mujoco
+
+# Install MuJoCo dependencies
+sudo apt install -y libgl1-mesa-glx libglfw3 libglfw3-dev libgles2-mesa-dev
+
+# Build C++ simulator
+cd simulate
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+
+# Build Python simulator
+cd ~/unitree_mujoco/simulate_python
+pip3 install -e .
+```
+
+**Official Repository**: [unitreerobotics/unitree_mujoco](https://github.com/unitreerobotics/unitree_mujoco)
+
+### Step 7: CycloneDDS Installation (CRITICAL PATH!)
+
+**⚠️ CRITICAL: App expects CycloneDDS at ~/unitree_ros2/cyclonedds_ws/ (NOT cyclonedx!)**
+
+```bash
+# Create workspace directory
+mkdir -p ~/unitree_ros2
+cd ~/unitree_ros2
+
+# CRITICAL: Install CycloneDDS to cyclonedds_ws/ as expected by the app
+git clone https://github.com/eclipse-cyclonedx/cyclonedx.git cyclonedds_ws
+cd cyclonedds_ws
+colcon build
+```
+
+### Step 8: Python Dependencies
 
 ```bash
 # Install Python packages
@@ -148,11 +209,13 @@ pip3 install \
     requests
 ```
 
-### Step 6: Inspire Hand Setup
+### Step 9: Inspire Hand Setup
+
+> **Note**: Inspire Hand library based on [Sentdex's inspire_hands repository](https://github.com/Sentdex/inspire_hands)
 
 ```bash
-# Install Inspire Hand Python module
-cd ~/Desktop/unitree-robot-control-suite/inspire_hand/
+# Install Inspire Hand Python module (must be in app directory)
+cd ~/unitree-robot-control-suite/inspire_hand/
 sudo python3 setup.py install
 
 # Add user to dialout group for serial access
@@ -168,6 +231,7 @@ sudo usermod -a -G dialout $USER
 ### 1. Clone This Repository
 
 ```bash
+# Clone repository directly to home directory (most common practice)
 git clone <your-github-repo-url>
 cd unitree-robot-control-suite
 ```
@@ -182,7 +246,7 @@ chmod +x install.sh
 ### 3. Launch the Application
 
 ```bash
-python3 unitree_g1_full_menu.py
+python3 unitree_robot_control_suite.py
 ```
 
 ---
@@ -195,22 +259,19 @@ unitree-robot-control-suite/
 ├── requirements.txt             # Python dependencies
 ├── install.sh                   # Automated installation script
 ├── .gitignore                   # Git ignore rules
-├── unitree_g1_full_menu.py     # Main GUI application
+├── LICENSE                      # MIT License
+├── unitree_robot_control_suite.py  # Main GUI application
 ├── go2w_camera_viewer.py        # Camera streaming utility
 ├── connect_inspire_hand.sh      # Inspire Hand connection script
 ├── inspire_hand/               # Inspire Hand Python module
 │   ├── __init__.py
+│   ├── __main__.py
 │   ├── cli.py
 │   ├── hand.py
 │   ├── modbus.py
 │   └── exceptions.py
-├── docs/                       # Documentation
-│   ├── installation.md
-│   ├── usage.md
-│   └── troubleshooting.md
+├── docs/                       # Documentation (empty - all docs in README.md)
 ├── scripts/                    # Utility scripts
-│   ├── setup_network.sh
-│   ├── install_sdks.sh
 │   └── verify_installation.sh
 └── examples/                   # Example configurations
     ├── camera_config.yaml
@@ -260,7 +321,7 @@ export DDS_PARTICIPANT_INDEX=0
 
 ### Main Interface
 
-1. **Launch Application**: `python3 unitree_g1_full_menu.py`
+1. **Launch Application**: `python3 unitree_robot_control_suite.py`
 2. **Select Robot Type**: Choose G1 or GO2W
 3. **Connect to Robot**: Ensure network connection
 4. **Use Control Features**: Camera, movement, hand control, etc.
@@ -333,16 +394,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 👨‍💻 Author
-
-**Michael** - **
-- Created: October 2025
-- Experience: 3 months of robot development (started from 0% knowledge!)
-
----
 
 ## 🙏 Acknowledgments
 
+- **Sentdex** for the excellent [Inspire Hand Python library](https://github.com/Sentdex/inspire_hands) - thank you for making robotic hand control accessible!
 - Unitree Robotics for the excellent SDK and documentation
 - ROS2 community for the robust robotics framework
 - Ubuntu community for the stable Linux platform

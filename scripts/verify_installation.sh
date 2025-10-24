@@ -83,8 +83,7 @@ for pkg in "${packages[@]}"; do
                 print_status "NumPy: $version"
                 ;;
             "netifaces")
-                version=$(python3 -c "import netifaces; print(netifaces.__version__)")
-                print_status "Netifaces: $version"
+                print_status "Netifaces: installed"
                 ;;
             "serial")
                 version=$(python3 -c "import serial; print(serial.__version__)")
@@ -100,21 +99,28 @@ echo ""
 echo "🤖 Checking ROS2 Installation..."
 echo "==============================="
 
-if command_exists ros2; then
-    print_status "ROS2 is installed"
-    ros2_version=$(ros2 --version 2>/dev/null | head -1)
-    print_info "Version: $ros2_version"
-else
-    print_error "ROS2 is NOT installed"
-fi
-
-# Check ROS2 setup files
+# Check ROS2 setup files (primary check)
+ros2_installed=false
 ros2_paths=("/opt/ros/humble/setup.bash" "/opt/ros/foxy/setup.bash")
 for path in "${ros2_paths[@]}"; do
     if path_exists "$path"; then
         print_status "ROS2 setup found: $path"
+        ros2_installed=true
+        break
     fi
 done
+
+# Check ROS2 command (secondary check)
+if command_exists ros2; then
+    print_status "ROS2 command available"
+    ros2_version=$(ros2 --version 2>/dev/null | head -1)
+    print_info "Version: $ros2_version"
+elif [ "$ros2_installed" = true ]; then
+    print_status "ROS2 is installed (command not in current shell PATH)"
+    print_info "Note: ROS2 works fine when sourced in your applications"
+else
+    print_error "ROS2 is NOT installed"
+fi
 
 echo ""
 echo "🔧 Checking Unitree SDK2 Installation..."
@@ -122,9 +128,9 @@ echo "======================================="
 
 # Check SDK2 directories
 sdk2_paths=(
-    "$HOME/unitree_ros2/unitree_sdk2"
-    "$HOME/unitree_ros2/unitree_sdk2_python"
-    "$HOME/unitree_ros2/cyclonedx_ws"
+    "$HOME/unitree_sdk2"
+    "$HOME/unitree_sdk2_python"
+    "$HOME/unitree_ros2/cyclonedds_ws"
 )
 
 for path in "${sdk2_paths[@]}"; do
@@ -136,9 +142,9 @@ for path in "${sdk2_paths[@]}"; do
 done
 
 # Check SDK2 binaries
-if path_exists "$HOME/unitree_ros2/unitree_sdk2/build/bin"; then
+if path_exists "$HOME/unitree_sdk2/build/bin"; then
     print_status "SDK2 binaries directory exists"
-    bin_count=$(ls "$HOME/unitree_ros2/unitree_sdk2/build/bin" 2>/dev/null | wc -l)
+    bin_count=$(ls "$HOME/unitree_sdk2/build/bin" 2>/dev/null | wc -l)
     print_info "Found $bin_count binary files"
 else
     print_error "SDK2 binaries directory missing"
@@ -155,10 +161,31 @@ echo ""
 echo "🌪️  Checking CycloneDDS Installation..."
 echo "========================================"
 
-if path_exists "$HOME/unitree_ros2/cyclonedx_ws/install/setup.bash"; then
+if path_exists "$HOME/unitree_ros2/cyclonedds_ws/install/setup.bash"; then
     print_status "CycloneDDS setup file exists"
 else
     print_error "CycloneDDS setup file missing"
+fi
+
+echo ""
+echo "🎮 Checking MuJoCo Simulation..."
+echo "==============================="
+
+# Check MuJoCo
+if path_exists "$HOME/unitree_mujoco"; then
+    print_status "Unitree MuJoCo directory exists"
+    if path_exists "$HOME/unitree_mujoco/simulate/build/unitree_mujoco"; then
+        print_status "MuJoCo C++ simulator built successfully"
+    else
+        print_warning "MuJoCo C++ simulator not built"
+    fi
+    if path_exists "$HOME/unitree_mujoco/unitree_robots"; then
+        print_status "Robot models directory exists"
+    else
+        print_warning "Robot models directory missing"
+    fi
+else
+    print_error "Unitree MuJoCo directory not found"
 fi
 
 echo ""
@@ -182,18 +209,18 @@ echo ""
 echo "🌍 Checking Environment Setup..."
 echo "==============================="
 
-# Check environment file
-if path_exists "$HOME/.unitree_env"; then
-    print_status "Environment setup file exists: ~/.unitree_env"
+# Check ROS2 environment
+if [ -f "/opt/ros/humble/setup.bash" ]; then
+    print_status "ROS2 Humble environment available"
 else
-    print_warning "Environment setup file missing: ~/.unitree_env"
+    print_warning "ROS2 Humble environment not found"
 fi
 
-# Check bashrc
-if grep -q "source ~/.unitree_env" ~/.bashrc; then
-    print_status "Environment sourcing added to ~/.bashrc"
+# Check Unitree ROS2 environment
+if [ -f "$HOME/unitree_ros2/setup.sh" ]; then
+    print_status "Unitree ROS2 environment available"
 else
-    print_warning "Environment sourcing NOT added to ~/.bashrc"
+    print_warning "Unitree ROS2 environment not found"
 fi
 
 echo ""
@@ -202,7 +229,7 @@ echo "============================"
 
 # Check main application files
 project_files=(
-    "unitree_g1_full_menu.py"
+    "unitree_robot_control_suite.py"
     "go2w_camera_viewer.py"
     "connect_inspire_hand.sh"
     "requirements.txt"
@@ -265,9 +292,10 @@ echo "🚀 Next Steps:"
 echo "=============="
 echo "1. Fix any ❌ errors shown above"
 echo "2. Address any ⚠️ warnings if needed"
-echo "3. Source environment: source ~/.unitree_env"
-echo "4. Connect robot via Ethernet"
-echo "5. Run application: python3 unitree_g1_full_menu.py"
+echo "3. Source ROS2 environment: source /opt/ros/humble/setup.bash"
+echo "4. Source Unitree environment: source ~/unitree_ros2/setup.sh"
+echo "5. Connect robot via Ethernet"
+echo "6. Run application: python3 unitree_robot_control_suite.py"
 echo ""
 echo "📚 For help:"
 echo "• Check README.md for detailed instructions"
