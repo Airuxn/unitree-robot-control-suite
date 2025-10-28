@@ -1853,7 +1853,7 @@ fi
     
     def visualize_lidar(self, widget):
         """Launch RViz2 with L1 lidar visualization"""
-        config_path = "~/unitree-robot-control-suite/go2w_lidar.rviz"
+        config_path = "~/unitree-robot-control-suite/unitree_l1_lidar.rviz"
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -2160,7 +2160,7 @@ class GO2WStreamsMenu(Gtk.Window):
     
     def visualize_lidar(self, widget):
         """Launch RViz2 with L1 lidar visualization"""
-        config_path = "~/unitree-robot-control-suite/go2w_lidar.rviz"
+        config_path = "~/unitree-robot-control-suite/unitree_l1_lidar.rviz"
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -2341,7 +2341,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
     
     def visualize_slam(self, widget, mode="mapping"):
         """Launch RViz2 to visualize XT16 SLAM data on laptop"""
-        config_path = f"~/unitree-robot-control-suite/{mode}.rviz"
+        config_path = f"~/unitree-robot-control-suite/hesai_xt16_{mode}.rviz"
         title = "Mapping" if mode == "mapping" else "Navigation/Relocation"
         window_title = f"XT16 SLAM {title} Visualization"
         try:
