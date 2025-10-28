@@ -1846,7 +1846,7 @@ fi
                 "--", 
                 "bash", 
                 "-c", 
-                f'echo "🎥 GO2W Front Camera Stream"; echo "=========================================="; echo "Running: python3 {script_path} enp3s0"; echo "=========================================="; echo "Press ESC to close the camera window"; echo ""; python3 "{script_path}" enp3s0; echo ""; read -p "Press Enter to close..." '
+                f'echo "🎥 GO2W Front Camera Stream"; echo "=========================================="; echo "Running: python3 {script_path} enp3s0"; echo "=========================================="; echo "Press ESC to close the camera window"; echo ""; python3 "{script_path}" enp3s0'
             ])
         except Exception as e:
             print(f"Error launching camera viewer: {e}")
@@ -2153,7 +2153,7 @@ class GO2WStreamsMenu(Gtk.Window):
                 "--", 
                 "bash", 
                 "-c", 
-                f'echo "🎥 GO2W Front Camera Stream"; echo "=========================================="; echo "Running: python3 {script_path} enp3s0"; echo "=========================================="; echo "Press ESC to close the camera window"; echo ""; python3 "{script_path}" enp3s0; echo ""; read -p "Press Enter to close..." '
+                f'echo "🎥 GO2W Front Camera Stream"; echo "=========================================="; echo "Running: python3 {script_path} enp3s0"; echo "=========================================="; echo "Press ESC to close the camera window"; echo ""; python3 "{script_path}" enp3s0'
             ])
         except Exception as e:
             print(f"Error launching camera viewer: {e}")

@@ -42,9 +42,22 @@ def main():
 
     print("✅ Camera connected! Displaying video stream...")
     print()
+    
+    # Create resizable window once outside the loop
+    cv2.namedWindow("Unitree Front Camera", cv2.WINDOW_NORMAL)
 
     # Request normal when code==0
     while code == 0:
+        # Check if window is still open first
+        try:
+            prop = cv2.getWindowProperty("Unitree Front Camera", 1)
+            if prop < 0:
+                print("\nWindow closed by user")
+                break
+        except:
+            print("\nWindow closed")
+            break
+        
         # Get Image data from robot
         code, data = client.GetImageSample()
 
@@ -54,11 +67,12 @@ def main():
             image = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
 
             if image is not None:
-                # Display image
+                # Display image in the window
                 cv2.imshow("Unitree Front Camera", image)
                 
                 # Press ESC to stop
-                if cv2.waitKey(20) == 27:
+                key = cv2.waitKey(20) & 0xFF
+                if key == 27:
                     print("\nClosing camera viewer...")
                     break
             else:
