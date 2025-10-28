@@ -506,7 +506,7 @@ echo "1" > /tmp/network_setup_status
     
     def launch_mujoco_simulation(self, widget):
         """Launch MuJoCo simulation for G1"""
-        command = "cd ~/unitree_mujoco/simulate/build && ./unitree_mujoco --robot g1 ../../unitree_robots/g1/scene_29dof_with_hand.xml"
+        command = "cd ~/unitree_mujoco/simulate/build && ./unitree_mujoco -r g1 ../../unitree_robots/g1/scene_29dof_with_hand.xml"
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -1006,23 +1006,24 @@ class SDKExamplesMenu(Gtk.Window):
         def on_robot(*args):
             # Create a script that will handle the SSH session and process termination
             with tempfile.NamedTemporaryFile('w', delete=False, suffix='.sh') as tmp_script:
-                tmp_script.write("""#!/bin/bash
+                robot_ip = self.robot_ip
+                tmp_script.write(f"""#!/bin/bash
 # Function to handle cleanup
-cleanup() {
+cleanup() {{
     echo "Cleaning up..."
-    ssh unitree@{self.robot_ip} 'pkill -f test_publisher'
+    ssh unitree@{robot_ip} 'pkill -f test_publisher' 2>/dev/null || true
     exit 0
-}
+}}
 
 # Set up trap to catch terminal close
 trap cleanup EXIT
 
 # Run the publisher on the robot
-echo "Running: ssh unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2-main/build/bin && ./test_publisher'"
-ssh unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2-main/build/bin && ./test_publisher'
+echo "Running: ssh unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && ./test_publisher'"
+ssh -t unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && ./test_publisher'
 
 # If we get here, the SSH session ended
-cleanup
+# Cleanup happens automatically via trap
 """)
                 script_path = tmp_script.name
             
@@ -1155,8 +1156,23 @@ class GO2WSDKExamplesMenu(Gtk.Window):
         response = dialog.run()
         dialog.destroy()
         if response == Gtk.ResponseType.OK:
-            cmd = "cd ~/unitree_sdk2/build/bin && DDS_DOMAIN=0 DDS_INTERFACE=enp3s0 DDS_PARTICIPANT_INDEX=0 ./go2w_sport_client enp3s0"
-            subprocess.Popen(["gnome-terminal", "--", "bash", "-c", f"echo 'Running: {cmd}'; {cmd}; exec bash"])
+            with tempfile.NamedTemporaryFile('w', delete=False, suffix='.sh') as tmp_script:
+                robot_ip = self.robot_ip
+                tmp_script.write(f"""#!/bin/bash
+# Run the sport client on the robot
+echo "Running: ssh unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && DDS_DOMAIN=0 DDS_INTERFACE=eth0 DDS_PARTICIPANT_INDEX=0 ./go2w_sport_client eth0'"
+ssh -t unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && DDS_DOMAIN=0 DDS_INTERFACE=eth0 DDS_PARTICIPANT_INDEX=0 ./go2w_sport_client eth0'
+
+# If we get here, the SSH session ended
+# Cleanup happens automatically via trap
+""")
+                script_path = tmp_script.name
+            
+            # Make the script executable
+            subprocess.run(["chmod", "+x", script_path])
+            
+            # Run the script in a new terminal
+            subprocess.Popen(["gnome-terminal", "--", "bash", "-c", script_path])
     
     def run_go2w_stand_example(self, widget):
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.WARNING, Gtk.ButtonsType.OK_CANCEL,
@@ -1164,8 +1180,23 @@ class GO2WSDKExamplesMenu(Gtk.Window):
         response = dialog.run()
         dialog.destroy()
         if response == Gtk.ResponseType.OK:
-            cmd = "cd ~/unitree_sdk2/build/bin && DDS_DOMAIN=0 DDS_INTERFACE=enp3s0 DDS_PARTICIPANT_INDEX=0 ./go2w_stand_example enp3s0"
-            subprocess.Popen(["gnome-terminal", "--", "bash", "-c", f"echo 'Running: {cmd}'; {cmd}; exec bash"])
+            with tempfile.NamedTemporaryFile('w', delete=False, suffix='.sh') as tmp_script:
+                robot_ip = self.robot_ip
+                tmp_script.write(f"""#!/bin/bash
+# Run the stand example on the robot
+echo "Running: ssh unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && DDS_DOMAIN=0 DDS_INTERFACE=eth0 DDS_PARTICIPANT_INDEX=0 ./go2w_stand_example eth0'"
+ssh -t unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && DDS_DOMAIN=0 DDS_INTERFACE=eth0 DDS_PARTICIPANT_INDEX=0 ./go2w_stand_example eth0'
+
+# If we get here, the SSH session ended
+# Cleanup happens automatically via trap
+""")
+                script_path = tmp_script.name
+            
+            # Make the script executable
+            subprocess.run(["chmod", "+x", script_path])
+            
+            # Run the script in a new terminal
+            subprocess.Popen(["gnome-terminal", "--", "bash", "-c", script_path])
     
     def run_hello_world_example(self, widget):
         # Create a dialog to choose which part to run
@@ -1194,23 +1225,11 @@ class GO2WSDKExamplesMenu(Gtk.Window):
         def on_robot_publisher(*args):
             # Create a script that will handle the SSH session and process termination
             with tempfile.NamedTemporaryFile('w', delete=False, suffix='.sh') as tmp_script:
+                robot_ip = self.robot_ip
                 tmp_script.write(f"""#!/bin/bash
-# Function to handle cleanup
-cleanup() {{
-    echo "Cleaning up..."
-    ssh unitree@{self.robot_ip} 'pkill -f test_publisher'
-    exit 0
-}}
-
-# Set up trap to catch terminal close
-trap cleanup EXIT
-
 # Run the publisher on the robot
-echo "Running: ssh unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2-main/build/bin && ./test_publisher'"
-ssh unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2-main/build/bin && ./test_publisher'
-
-# If we get here, the SSH session ended
-cleanup
+echo "Running: ssh unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && ./test_publisher'"
+ssh -t unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && ./test_publisher'
 """)
                 script_path = tmp_script.name
             
@@ -1224,23 +1243,11 @@ cleanup
         def on_robot_subscriber(*args):
             # Create a script that will handle the SSH session and process termination
             with tempfile.NamedTemporaryFile('w', delete=False, suffix='.sh') as tmp_script:
+                robot_ip = self.robot_ip
                 tmp_script.write(f"""#!/bin/bash
-# Function to handle cleanup
-cleanup() {{
-    echo "Cleaning up..."
-    ssh unitree@{self.robot_ip} 'pkill -f test_subscriber'
-    exit 0
-}}
-
-# Set up trap to catch terminal close
-trap cleanup EXIT
-
 # Run the subscriber on the robot
-echo "Running: ssh unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2-main/build/bin && ./test_subscriber'"
-ssh unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2-main/build/bin && ./test_subscriber'
-
-# If we get here, the SSH session ended
-cleanup
+echo "Running: ssh unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && ./test_subscriber'"
+ssh -t unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && ./test_subscriber'
 """)
                 script_path = tmp_script.name
             
@@ -1313,8 +1320,23 @@ class GO2WPythonExamplesMenu(Gtk.Window):
         response = dialog.run()
         dialog.destroy()
         if response == Gtk.ResponseType.OK:
-            cmd = "cd ~/unitree_sdk2_python/example/go2w/high_level && python3 go2w_sport_client.py enp3s0"
-            subprocess.Popen(["gnome-terminal", "--", "bash", "-c", f"echo 'Running: {cmd}'; {cmd}; exec bash"])
+            with tempfile.NamedTemporaryFile('w', delete=False, suffix='.sh') as tmp_script:
+                robot_ip = self.robot_ip
+                tmp_script.write(f"""#!/bin/bash
+# Run the sport client on the robot
+echo "Running: ssh unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2_python/example/go2w/high_level && python3 go2w_sport_client.py eth0'"
+ssh -t unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2_python/example/go2w/high_level && python3 go2w_sport_client.py eth0'
+
+# If we get here, the SSH session ended
+# Cleanup happens automatically via trap
+""")
+                script_path = tmp_script.name
+            
+            # Make the script executable
+            subprocess.run(["chmod", "+x", script_path])
+            
+            # Run the script in a new terminal
+            subprocess.Popen(["gnome-terminal", "--", "bash", "-c", script_path])
     
     def run_go2w_stand_example(self, widget):
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.WARNING, Gtk.ButtonsType.OK_CANCEL,
@@ -1322,8 +1344,23 @@ class GO2WPythonExamplesMenu(Gtk.Window):
         response = dialog.run()
         dialog.destroy()
         if response == Gtk.ResponseType.OK:
-            cmd = "cd ~/unitree_sdk2_python/example/go2w/low_level && python3 go2w_stand_example.py enp3s0"
-            subprocess.Popen(["gnome-terminal", "--", "bash", "-c", f"echo 'Running: {cmd}'; {cmd}; exec bash"])
+            with tempfile.NamedTemporaryFile('w', delete=False, suffix='.sh') as tmp_script:
+                robot_ip = self.robot_ip
+                tmp_script.write(f"""#!/bin/bash
+# Run the stand example on the robot
+echo "Running: ssh unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2_python/example/go2w/low_level && python3 go2w_stand_example.py eth0'"
+ssh -t unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2_python/example/go2w/low_level && python3 go2w_stand_example.py eth0'
+
+# If we get here, the SSH session ended
+# Cleanup happens automatically via trap
+""")
+                script_path = tmp_script.name
+            
+            # Make the script executable
+            subprocess.run(["chmod", "+x", script_path])
+            
+            # Run the script in a new terminal
+            subprocess.Popen(["gnome-terminal", "--", "bash", "-c", script_path])
     
     def run_hello_world_example(self, widget):
         # Create a dialog to choose which part to run
@@ -1341,34 +1378,35 @@ class GO2WPythonExamplesMenu(Gtk.Window):
         
         def on_laptop_publisher(*args):
             cmd = "cd ~/unitree_sdk2_python/example/helloworld && python3 publisher.py"
-            subprocess.Popen(["gnome-terminal", "--", "bash", "-c", f"echo 'Running: {cmd}'; {cmd}; exec bash"])
-            dialog.destroy()
+            with tempfile.NamedTemporaryFile('w', delete=False, suffix='.sh') as tmp_script:
+                tmp_script.write(f"""#!/bin/bash
+echo 'Running: {cmd}'
+cd ~/unitree_sdk2_python/example/helloworld && python3 publisher.py
+""")
+                script_path = tmp_script.name
+                subprocess.run(["chmod", "+x", script_path])
+                subprocess.Popen(["gnome-terminal", "--", "bash", "-c", script_path])
+                dialog.destroy()
         
         def on_laptop_subscriber(*args):
             cmd = "cd ~/unitree_sdk2_python/example/helloworld && python3 subscriber.py"
-            subprocess.Popen(["gnome-terminal", "--", "bash", "-c", f"echo 'Running: {cmd}'; {cmd}; exec bash"])
-            dialog.destroy()
+            with tempfile.NamedTemporaryFile('w', delete=False, suffix='.sh') as tmp_script:
+                tmp_script.write(f"""#!/bin/bash
+echo 'Running: {cmd}'
+cd ~/unitree_sdk2_python/example/helloworld && python3 subscriber.py
+""")
+                script_path = tmp_script.name
+                subprocess.run(["chmod", "+x", script_path])
+                subprocess.Popen(["gnome-terminal", "--", "bash", "-c", script_path])
+                dialog.destroy()
         
         def on_robot_publisher(*args):
             # Create a script that will handle the SSH session and process termination
             with tempfile.NamedTemporaryFile('w', delete=False, suffix='.sh') as tmp_script:
                 tmp_script.write(f"""#!/bin/bash
-# Function to handle cleanup
-cleanup() {{
-    echo "Cleaning up..."
-    ssh unitree@{self.robot_ip} 'pkill -f publisher.py'
-    exit 0
-}}
-
-# Set up trap to catch terminal close
-trap cleanup EXIT
-
 # Run the publisher on the robot
 echo "Running: ssh unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2_python/example/helloworld && python3 publisher.py'"
-ssh unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2_python/example/helloworld && python3 publisher.py'
-
-# If we get here, the SSH session ended
-cleanup
+ssh -t unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2_python/example/helloworld && python3 publisher.py'
 """)
                 script_path = tmp_script.name
             
@@ -1383,22 +1421,9 @@ cleanup
             # Create a script that will handle the SSH session and process termination
             with tempfile.NamedTemporaryFile('w', delete=False, suffix='.sh') as tmp_script:
                 tmp_script.write(f"""#!/bin/bash
-# Function to handle cleanup
-cleanup() {{
-    echo "Cleaning up..."
-    ssh unitree@{self.robot_ip} 'pkill -f subscriber.py'
-    exit 0
-}}
-
-# Set up trap to catch terminal close
-trap cleanup EXIT
-
 # Run the subscriber on the robot
 echo "Running: ssh unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2_python/example/helloworld && python3 subscriber.py'"
-ssh unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2_python/example/helloworld && python3 subscriber.py'
-
-# If we get here, the SSH session ended
-cleanup
+ssh -t unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2_python/example/helloworld && python3 subscriber.py'
 """)
                 script_path = tmp_script.name
             
@@ -1798,7 +1823,7 @@ fi
     
     def launch_mujoco_simulation(self, widget):
         """Launch MuJoCo simulation for GO2W"""
-        command = "cd unitree_mujoco/simulate/build && ./unitree_mujoco -r go2w -s scene_terrain.xml"
+        command = "cd ~/unitree_mujoco/simulate/build && ./unitree_mujoco -r go2w -s scene_terrain.xml"
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -2272,7 +2297,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
         """Start XT16 Lidar Driver"""
         try:
             # Create a wrapper that sources ROS and runs the command
-            cmd = 'echo "📡 Starting XT16 Lidar Driver"; echo "=========================================="; echo "Robot: 192.168.123.18"; echo "Lidar: 192.168.123.20"; echo "Topic: rt/unitree/slam_lidar/points"; echo "=========================================="; echo ""; echo "Connecting and starting driver..."; echo ""; ssh -t unitree@192.168.123.18 \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./xt16_driver eth0"\'; exec bash'
+            cmd = 'echo "Command: ssh -t unitree@192.168.123.18 \'cd /unitree/module/unitree_slam/bin && ./xt16_driver eth0\'"; echo ""; echo "📡 Starting XT16 Lidar Driver"; echo "=========================================="; echo "Robot: 192.168.123.18"; echo "Lidar: 192.168.123.20"; echo "Topic: rt/unitree/slam_lidar/points"; echo "=========================================="; echo ""; echo "Connecting and starting driver..."; echo ""; ssh -t unitree@192.168.123.18 \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./xt16_driver eth0"\'; exec bash'
             subprocess.Popen([
                 "gnome-terminal", 
                 "--title=XT16 Lidar Driver", 
@@ -2287,7 +2312,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
     def start_slam_service(self, widget):
         """Start SLAM Service"""
         try:
-            cmd = 'echo "🤖 Starting SLAM Service"; echo "=========================================="; echo "Robot: 192.168.123.18"; echo "Service: unitree_slam"; echo "=========================================="; echo ""; echo "Connecting and starting SLAM service..."; echo ""; ssh -t unitree@192.168.123.18 \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./unitree_slam"\'; exec bash'
+            cmd = 'echo "Command: ssh -t unitree@192.168.123.18 \'cd /unitree/module/unitree_slam/bin && ./unitree_slam\'"; echo ""; echo "🤖 Starting SLAM Service"; echo "=========================================="; echo "Robot: 192.168.123.18"; echo "Service: unitree_slam"; echo "=========================================="; echo ""; echo "Connecting and starting SLAM service..."; echo ""; ssh -t unitree@192.168.123.18 \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./unitree_slam"\'; exec bash'
             subprocess.Popen([
                 "gnome-terminal", 
                 "--title=SLAM Service", 
@@ -2302,7 +2327,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
     def start_keydemo(self, widget):
         """Start KeyDemo for mapping control"""
         try:
-            cmd = 'echo "🕹️ SLAM KeyDemo - Mapping Control"; echo "=========================================="; echo "Controls:"; echo "  q - Start mapping"; echo "  w - End mapping and save"; echo "  a - Start relocation"; echo "  s - Add pose to task list"; echo "  d - Execute task list"; echo "  f - Clear task list"; echo "  z - Pause navigation"; echo "  x - Resume navigation"; echo "=========================================="; echo ""; echo "Connecting and starting KeyDemo..."; echo ""; ssh -t unitree@192.168.123.18 \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./keyDemo eth0"\'; exec bash'
+            cmd = 'echo "Command: ssh -t unitree@192.168.123.18 \'cd /unitree/module/unitree_slam/bin && ./keyDemo eth0\'"; echo ""; echo "🕹️ SLAM KeyDemo - Mapping Control"; echo "=========================================="; echo "Controls:"; echo "  q - Start mapping"; echo "  w - End mapping and save"; echo "  a - Start relocation"; echo "  s - Add pose to task list"; echo "  d - Execute task list"; echo "  f - Clear task list"; echo "  z - Pause navigation"; echo "  x - Resume navigation"; echo "=========================================="; echo ""; echo "Connecting and starting KeyDemo..."; echo ""; ssh -t unitree@192.168.123.18 \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./keyDemo eth0"\'; exec bash'
             subprocess.Popen([
                 "gnome-terminal", 
                 "--title=SLAM KeyDemo - Mapping Control", 
@@ -2316,7 +2341,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
     
     def visualize_slam(self, widget, mode="mapping"):
         """Launch RViz2 to visualize XT16 SLAM data on laptop"""
-        config_path = f"~/Desktop/{mode}.rviz"
+        config_path = f"~/unitree-robot-control-suite/{mode}.rviz"
         title = "Mapping" if mode == "mapping" else "Navigation/Relocation"
         window_title = f"XT16 SLAM {title} Visualization"
         try:
