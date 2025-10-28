@@ -1838,7 +1838,7 @@ fi
     
     def view_camera(self, widget):
         """Launch camera viewer for GO2W"""
-        script_path = "~/Desktop/go2w_camera_viewer.py"
+        script_path = "~/unitree-robot-control-suite/go2w_camera_viewer.py"
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -1853,7 +1853,7 @@ fi
     
     def visualize_lidar(self, widget):
         """Launch RViz2 with L1 lidar visualization"""
-        config_path = "~/Desktop/go2w_lidar.rviz"
+        config_path = "~/unitree-robot-control-suite/go2w_lidar.rviz"
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -2145,7 +2145,7 @@ class GO2WStreamsMenu(Gtk.Window):
     
     def view_camera(self, widget):
         """Launch camera viewer for GO2W"""
-        script_path = "~/Desktop/go2w_camera_viewer.py"
+        script_path = "~/unitree-robot-control-suite/go2w_camera_viewer.py"
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -2160,7 +2160,7 @@ class GO2WStreamsMenu(Gtk.Window):
     
     def visualize_lidar(self, widget):
         """Launch RViz2 with L1 lidar visualization"""
-        config_path = "~/Desktop/go2w_lidar.rviz"
+        config_path = "~/unitree-robot-control-suite/go2w_lidar.rviz"
         try:
             subprocess.Popen([
                 "gnome-terminal", 
