@@ -2279,11 +2279,17 @@ class GO2WXT16SlamMenu(Gtk.Window):
         view_maps_btn.connect("clicked", self.view_saved_maps)
         nav_grid.attach(view_maps_btn, 0, 1, 1, 1)
         
+        # Visualize maps button
+        viz_maps_btn = Gtk.Button(label="🔍 Visualize Saved Maps")
+        viz_maps_btn.set_size_request(0, 45)
+        viz_maps_btn.connect("clicked", self.visualize_saved_maps)
+        nav_grid.attach(viz_maps_btn, 1, 1, 1, 1)
+        
         # Manual button
         manual_btn = Gtk.Button(label="Open Manual")
         manual_btn.set_size_request(0, 45)
         manual_btn.connect("clicked", self.open_manual)
-        nav_grid.attach(manual_btn, 1, 1, 1, 1)
+        nav_grid.attach(manual_btn, 0, 2, 2, 1)
         
         vbox.pack_start(nav_grid, False, False, 0)
         
@@ -2365,10 +2371,24 @@ class GO2WXT16SlamMenu(Gtk.Window):
                 "--", 
                 "bash", 
                 "-c", 
-                'echo "🗺️ Saved SLAM Maps"; echo "=========================================="; echo "Location: /unitree/module/unitree_slam/bin/"; echo "=========================================="; echo ""; ssh unitree@192.168.123.18 "cd /unitree/module/unitree_slam/bin && ls -lh *.pcd 2>/dev/null || echo \'No maps found. Create a map first!\'; echo \'\'; echo \'Press Enter to close...\'; read"'
+                'echo "🗺️ Saved SLAM Maps"; echo "=========================================="; echo "Location: /home/unitree/"; echo "=========================================="; echo ""; ssh unitree@192.168.123.18 "cd /home/unitree && ls -lh *.pcd 2>/dev/null || echo \'No maps found. Create a map first!\'; echo \'\'; echo \'Press Enter to close...\'; read"'
             ])
         except Exception as e:
             print(f"Error viewing maps: {e}")
+    
+    def visualize_saved_maps(self, widget):
+        """Visualize a saved PCD map"""
+        try:
+            subprocess.Popen([
+                "gnome-terminal", 
+                "--title=Visualize Saved Map", 
+                "--", 
+                "bash", 
+                "-c", 
+                '''echo "🔍 Visualizing Saved SLAM Map"; echo "=========================================="; echo "Available maps:"; ssh unitree@192.168.123.18 "cd /home/unitree && ls -lh *.pcd 2>/dev/null || echo 'No maps found!'"; echo ""; echo "Enter map filename (e.g., test.pcd) or press Enter for test.pcd:"; read MAP_NAME; if [ -z "$MAP_NAME" ]; then MAP_NAME="test.pcd"; fi; echo ""; echo "Downloading $MAP_NAME..."; scp unitree@192.168.123.18:/home/unitree/$MAP_NAME /tmp/saved_map.pcd && echo "Map downloaded to /tmp/saved_map.pcd"; echo ""; echo "Opening pcl_viewer..."; pcl_viewer /tmp/saved_map.pcd'''
+            ])
+        except Exception as e:
+            print(f"Error visualizing saved map: {e}")
     
     def open_manual(self, widget):
         """Open the autonomous navigation manual"""
