@@ -18,6 +18,8 @@ A comprehensive GUI application for controlling Unitree robots, featuring camera
 - **📹 Real-time Camera Streaming**: Live camera feed from robot cameras
 - **🤖 Inspire Hand Integration**: Control robotic hands via serial communication
 - **🧭 Autonomous Navigation**: AI-powered autonomous movement capabilities
+- **🗺️ SLAM Mapping**: Hesai XT16 lidar-based mapping and navigation
+- **📸 Map Visualization**: View and visualize saved PCD maps
 - **🔧 SDK Integration**: Direct integration with Unitree SDK2
 - **📊 Simulation Support**: MuJoCo simulation environment
 - **🌐 Network Management**: WiFi and Ethernet connection management
@@ -65,6 +67,7 @@ This repository references the official Unitree SDKs:
 - **GTK3**: For GUI interface
 - **OpenCV**: For camera streaming
 - **Unitree SDK2**: Complete SDK installation required
+- **pcl-tools**: For visualizing PCD map files
 
 ---
 
@@ -89,7 +92,8 @@ sudo apt install -y \
     build-essential \
     cmake \
     curl \
-    wget
+    wget \
+    pcl-tools
 ```
 
 ### Step 2: ROS2 Installation
@@ -345,6 +349,22 @@ python3 go2w_camera_viewer.py enp3s0
 # Direct Python control
 python3 -m inspire_hand.cli interactive
 ```
+
+### SLAM Mapping & Navigation
+
+The application includes comprehensive SLAM capabilities with the Hesai XT16 lidar:
+
+1. **Start XT16 Lidar Driver**: Begins lidar data streaming
+2. **Start SLAM Service**: Launches the mapping service
+3. **Start KeyDemo**: Interactive mapping control
+   - Press `q` to start mapping
+   - Press `w` to save map
+   - Create and save maps with ease
+4. **Visualize in RViz**: Real-time point cloud visualization
+5. **View Saved Maps**: List all saved PCD maps
+6. **Visualize Saved Maps**: Download and view saved maps with pcl_viewer
+
+**Map Storage**: Maps are saved to `/home/unitree/` on the robot as `.pcd` files.
 
 ---
 
