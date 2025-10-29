@@ -210,9 +210,12 @@ cyclonedx_ws/log/
 # Image captures
 screenshots/
 captures/
-*.png
 *.jpg
 *.jpeg
+
+# Icons (allow PNG icons)
+*.png
+!icons/*.png
 
 # Serial port logs
 serial_*.log

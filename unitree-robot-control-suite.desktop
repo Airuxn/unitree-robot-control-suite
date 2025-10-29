@@ -1,0 +1,16 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Unitree Robot Control Suite
+Name[en]=Unitree Robot Control Suite
+Comment=Professional Robot Control Interface for Unitree G1 and GO2W Robots
+Comment[en]=Professional Robot Control Interface for Unitree G1 and GO2W Robots
+Exec=python3 ~/unitree-robot-control-suite/unitree_robot_control_suite.py
+Icon=~/unitree-robot-control-suite/icons/unitree-robot-control-suite.png
+Path=~/unitree-robot-control-suite
+Terminal=false
+Categories=Development;System;Engineering;
+Keywords=robot;unitree;control;robotics;g1;go2w;
+StartupNotify=true
+MimeType=
+
