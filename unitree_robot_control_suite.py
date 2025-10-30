@@ -150,6 +150,7 @@ class G1MenuWindow(Gtk.Window):
         self.menu_options = ["Connect to EDU",
             "ROS 2 Terminal",
             "G1 Autonomous Navigation",
+            "G1 SLAM & Navigation",
             "MuJoCo Simulation",
             "C++ SDK Examples",
             "Python SDK Examples"
@@ -476,7 +477,6 @@ echo "1" > /tmp/network_setup_status
         while progress.get_visible():
             while Gtk.events_pending():
                 Gtk.main_iteration()
-            time.sleep(0.05)
 
     def on_menu_option(self, widget):
         text = widget.get_label()
@@ -492,7 +492,13 @@ echo "1" > /tmp/network_setup_status
             self.launch_mujoco_simulation(widget)
         elif text == "G1 Autonomous Navigation":
             self.show_autonomous_dialog(widget)
+        elif text == "G1 SLAM & Navigation":
+            self.show_g1_slam_menu(widget)
 
+    def show_g1_slam_menu(self, widget):
+        """Show the G1 SLAM & Navigation menu"""
+        slam_menu = G1SlamMenu(self)
+        slam_menu.show_all()
 
     def show_sdk_examples(self, widget):
         """Show the SDK examples menu"""
@@ -2397,6 +2403,503 @@ class GO2WXT16SlamMenu(Gtk.Window):
             subprocess.Popen(["xdg-open", manual_path])
         except Exception as e:
             print(f"Error opening manual: {e}")
+    
+    def on_return(self, widget):
+        self.destroy()
+        self.parent.show_all()
+
+class G1SlamMenu(Gtk.Window):
+    def __init__(self, parent):
+        Gtk.Window.__init__(self, title="G1 SLAM & Navigation")
+        self.set_border_width(24)
+        self.set_default_size(500, 650)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0.09, 0.11, 0.13, 1))
+        self.parent = parent
+        
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        vbox.set_homogeneous(False)
+        self.add(vbox)
+        
+        # Title
+        title_label = Gtk.Label()
+        title_label.set_markup('<span size="x-large" weight="bold" foreground="#00FFD0">🗺️ G1 SLAM & Navigation</span>')
+        vbox.pack_start(title_label, False, False, 0)
+        
+        # Info label
+        info_label = Gtk.Label()
+        info_label.set_markup('<span size="small" foreground="#888888">Complete SLAM workflow for G1 autonomous navigation</span>')
+        info_label.set_line_wrap(True)
+        vbox.pack_start(info_label, False, False, 0)
+        
+        # Section 1: SLAM Mapping Control
+        section1_label = Gtk.Label()
+        section1_label.set_markup('<span size="large" weight="bold" foreground="#00BFFF">📡 SLAM Mapping</span>')
+        section1_label.set_xalign(0)
+        vbox.pack_start(section1_label, False, False, 10)
+        
+        # Grid for mapping buttons
+        map_grid = Gtk.Grid()
+        map_grid.set_row_spacing(8)
+        map_grid.set_column_spacing(8)
+        map_grid.set_column_homogeneous(True)
+        
+        start_map_btn = Gtk.Button(label="▶ Start Mapping")
+        start_map_btn.set_size_request(0, 45)
+        start_map_btn.get_style_context().add_class("suggested-action")
+        start_map_btn.connect("clicked", self.start_mapping)
+        map_grid.attach(start_map_btn, 0, 0, 1, 1)
+        
+        stop_map_btn = Gtk.Button(label="⏹ Stop Mapping")
+        stop_map_btn.set_size_request(0, 45)
+        stop_map_btn.get_style_context().add_class("destructive-action")
+        stop_map_btn.connect("clicked", self.stop_mapping)
+        map_grid.attach(stop_map_btn, 1, 0, 1, 1)
+        
+        save_map_btn = Gtk.Button(label="💾 Save Map")
+        save_map_btn.set_size_request(0, 45)
+        save_map_btn.connect("clicked", self.save_map)
+        map_grid.attach(save_map_btn, 0, 1, 2, 1)
+        
+        vbox.pack_start(map_grid, False, False, 0)
+        
+        map_info = Gtk.Label()
+        map_info.set_markup('<span size="small" foreground="#666666">Create and save SLAM maps for navigation</span>')
+        map_info.set_xalign(0)
+        vbox.pack_start(map_info, False, False, 0)
+        
+        # Remote keyDemo button (runs on robot)
+        keydemo_btn = Gtk.Button(label="🎮 Run keyDemo on Robot")
+        keydemo_btn.set_size_request(0, 45)
+        keydemo_btn.connect("clicked", self.run_keydemo_on_robot)
+        vbox.pack_start(keydemo_btn, False, False, 8)
+        
+        keydemo_info = Gtk.Label()
+        keydemo_info.set_markup('<span size="small" foreground="#666666">Interactive SLAM control from robot terminal</span>')
+        keydemo_info.set_xalign(0)
+        vbox.pack_start(keydemo_info, False, False, 0)
+        
+        # Section 2: Relocation
+        section2_label = Gtk.Label()
+        section2_label.set_markup('<span size="large" weight="bold" foreground="#00BFFF">📍 Relocation</span>')
+        section2_label.set_xalign(0)
+        vbox.pack_start(section2_label, False, False, 10)
+        
+        reloc_btn = Gtk.Button(label="Start Relocation")
+        reloc_btn.set_size_request(0, 50)
+        reloc_btn.connect("clicked", self.start_relocation)
+        vbox.pack_start(reloc_btn, False, False, 0)
+        
+        reloc_info = Gtk.Label()
+        reloc_info.set_markup('<span size="small" foreground="#666666">Relocate robot in saved map</span>')
+        reloc_info.set_xalign(0)
+        vbox.pack_start(reloc_info, False, False, 0)
+        
+        # Section 3: Visualization
+        section3_label = Gtk.Label()
+        section3_label.set_markup('<span size="large" weight="bold" foreground="#00BFFF">🚀 Visualization Tools</span>')
+        section3_label.set_xalign(0)
+        vbox.pack_start(section3_label, False, False, 10)
+        
+        # Grid for visualization buttons
+        viz_grid = Gtk.Grid()
+        viz_grid.set_row_spacing(8)
+        viz_grid.set_column_spacing(8)
+        viz_grid.set_column_homogeneous(True)
+        
+        # Visualize Mapping button
+        viz_map_btn = Gtk.Button(label="📊 Visualize Mapping")
+        viz_map_btn.set_size_request(0, 45)
+        viz_map_btn.connect("clicked", lambda w: self.visualize_slam(w, "mapping"))
+        viz_grid.attach(viz_map_btn, 0, 0, 1, 1)
+        
+        # Visualize Relocation button
+        viz_reloc_btn = Gtk.Button(label="📍 Visualize Relocation")
+        viz_reloc_btn.set_size_request(0, 45)
+        viz_reloc_btn.connect("clicked", lambda w: self.visualize_slam(w, "relocation"))
+        viz_grid.attach(viz_reloc_btn, 1, 0, 1, 1)
+        
+        # Visualize Lidar button
+        viz_lidar_btn = Gtk.Button(label="🔍 Visualize Lidar Stream")
+        viz_lidar_btn.set_size_request(0, 45)
+        viz_lidar_btn.connect("clicked", self.visualize_lidar)
+        viz_grid.attach(viz_lidar_btn, 0, 1, 2, 1)
+        
+        vbox.pack_start(viz_grid, False, False, 0)
+        
+        # Return button
+        return_btn = Gtk.Button(label="Return")
+        return_btn.set_size_request(0, 40)
+        return_btn.connect("clicked", self.on_return)
+        vbox.pack_start(return_btn, False, False, 10)
+    
+    def send_slam_command(self, command_type, action):
+        """Send SLAM command via ROS2 topic API"""
+        print(f"DEBUG: send_slam_command called with command_type={command_type}, action={action}")
+        import json
+        robot_ip = "192.168.123.164"
+        
+        # Build JSON command based on official Unitree API format
+        # According to documentation: api-id 1801=start mapping, 1802=end mapping, 1804=initialize pose
+        if command_type == "mapping":
+            if action == "start":
+                # API ID 1801: Start mapping with slam_type="indoor"
+                cmd_json = json.dumps({"data": {"slam_type": "indoor"}})
+                api_id = 1801
+            elif action == "stop":
+                # API ID 1802: End mapping (save map)
+                # Default save address, user can modify if needed
+                cmd_json = json.dumps({"data": {"address": "/home/unitree/test.pcd"}})
+                api_id = 1802
+            elif action == "save":
+                # Same as stop mapping - saves the map
+                cmd_json = json.dumps({"data": {"address": "/home/unitree/test.pcd"}})
+                api_id = 1802
+        elif command_type == "relocation":
+            # For relocation, we need initialize pose (api_id 1804)
+            # But this requires loading a map first, so we'll use a default
+            cmd_json = json.dumps({"data": {
+                "x": 0.0, "y": 0.0, "z": 0.0,
+                "q_x": 0.0, "q_y": 0.0, "q_z": 0.0, "q_w": 1.0,
+                "address": "/home/unitree/test.pcd"
+            }})
+            api_id = 1804
+        else:
+            return
+        
+        # Create Python script to publish command
+        script = f'''#!/usr/bin/env python3
+# API ID: {api_id}
+import rclpy
+from rclpy.node import Node
+from unitree_api.msg import Request
+from unitree_api.msg import Response
+import json
+import sys
+
+class SlamCommandPublisher(Node):
+    def __init__(self):
+        super().__init__('g1_slam_command_publisher')
+        self.publisher = self.create_publisher(Request, '/api/slam_operate/request', 10)
+        self.subscription = self.create_subscription(Response, '/api/slam_operate/response', self.response_callback, 10)
+        self.response_received = False
+        self.response_data = None
+        self.expected_request_id = None
+        
+        # Give subscription time to connect
+        import time
+        time.sleep(0.5)
+        for _ in range(5):
+            rclpy.spin_once(self, timeout_sec=0.1)
+        
+    def response_callback(self, msg):
+        # Check if this response matches our request
+        if self.expected_request_id is None or msg.header.identity.id == self.expected_request_id:
+            self.response_data = msg
+            self.response_received = True
+        
+    def send_command(self, cmd_json):
+        import random
+        import time as time_module
+        
+        # Generate unique request ID
+        self.expected_request_id = int(time_module.time() * 1000) + random.randint(1000, 9999)
+        
+        msg = Request()
+        msg.header.identity.id = self.expected_request_id
+        msg.header.identity.api_id = {api_id}  # Use correct API ID ({api_id})
+        msg.header.lease.id = 1
+        msg.header.policy.priority = 0
+        msg.header.policy.noreply = False
+        msg.parameter = cmd_json
+        
+        print(f"Sending command: {{cmd_json}}")
+        
+        # Reset response flag
+        self.response_received = False
+        self.response_data = None
+        
+        self.publisher.publish(msg)
+        print("Command sent. Waiting for response...")
+        
+        # Wait for response (timeout after 10 seconds)
+        import time
+        start_time = time.time()
+        timeout = 10.0
+        while not self.response_received and (time.time() - start_time) < timeout:
+            rclpy.spin_once(self, timeout_sec=0.1)
+        
+        if self.response_received and self.response_data:
+            response_data = self.response_data.data
+            response_code = self.response_data.header.status.code
+            
+            # Try to parse as JSON first
+            try:
+                response_json = json.loads(response_data)
+                print("Response: " + json.dumps(response_json, indent=2))
+                if response_json.get('succeed'):
+                    print("✅ Command succeeded!")
+                elif 'errorCode' in response_json:
+                    if response_json.get('errorCode') == 0:
+                        print("✅ Command succeeded!")
+                    else:
+                        error_msg = response_json.get('info', 'Unknown error')
+                        print(f"❌ Command failed: {{error_msg}}")
+                else:
+                    print("✅ Command accepted")
+            except json.JSONDecodeError:
+                # Not JSON - check response code instead
+                if response_code == 0:
+                    print("✅ Command succeeded!")
+                else:
+                    print(f"⚠️ Response code: {{response_code}}")
+        else:
+            print("⚠️ No response received (timeout or error)")
+            print("This might mean:")
+            print("  1. The robot is not running SLAM services")
+            print("  2. DDS domain/network configuration issue")
+            print("  3. The command format might be incorrect")
+            print("  4. Check /slam_info topic for status")
+
+def main():
+    rclpy.init()
+    node = SlamCommandPublisher()
+    node.send_command({repr(cmd_json)})
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+'''
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.py') as tmp_script:
+                tmp_script.write(script)
+                script_path = tmp_script.name
+            
+            subprocess.run(["chmod", "+x", script_path])
+            
+            cmd = f'echo "Command: python3 {script_path}"; echo ""; echo "🤖 G1 SLAM Command ({action.title()} {command_type})"; echo "=========================================="; echo "Robot: {robot_ip}"; echo "API: /api/slam_operate"; echo "=========================================="; echo ""; source /opt/ros/humble/setup.bash && source ~/unitree_ros2/cyclonedds_ws/install/setup.bash && source ~/unitree_ros2/setup.sh && python3 "{script_path}"; echo ""; echo "Press Enter to close..."; read'
+            
+            print(f"DEBUG: About to launch terminal with command: {cmd[:100]}...")
+            print(f"DEBUG: Script path: {script_path}")
+            
+            try:
+                result = subprocess.Popen([
+                    "gnome-terminal",
+                    f"--title=G1 SLAM {action.title()} {command_type.title()}",
+                    "--",
+                    "bash",
+                    "-c",
+                    cmd
+                ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                print(f"DEBUG: Terminal launch attempted, PID: {result.pid}")
+            except FileNotFoundError:
+                error_dialog = Gtk.MessageDialog(
+                    parent=self,
+                    flags=0,
+                    message_type=Gtk.MessageType.ERROR,
+                    buttons=Gtk.ButtonsType.OK,
+                    text="gnome-terminal not found"
+                )
+                error_dialog.format_secondary_text("Please install gnome-terminal or use a different terminal emulator")
+                error_dialog.run()
+                error_dialog.destroy()
+                return
+            
+            # Give it a moment and check if it started
+            import time
+            time.sleep(0.5)
+            if result.poll() is not None and result.returncode != 0:
+                error_dialog = Gtk.MessageDialog(
+                    parent=self,
+                    flags=0,
+                    message_type=Gtk.MessageType.ERROR,
+                    buttons=Gtk.ButtonsType.OK,
+                    text=f"Error launching SLAM command terminal"
+                )
+                error_dialog.format_secondary_text(f"Failed to open terminal. Return code: {result.returncode}")
+                error_dialog.run()
+                error_dialog.destroy()
+            
+        except Exception as e:
+            import traceback
+            error_msg = f"Error sending SLAM command: {str(e)}\n{traceback.format_exc()}"
+            print(error_msg)
+            error_dialog = Gtk.MessageDialog(
+                parent=self,
+                flags=0,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="Error sending SLAM command"
+            )
+            error_dialog.format_secondary_text(str(e))
+            error_dialog.run()
+            error_dialog.destroy()
+    
+    def start_mapping(self, widget):
+        """Start SLAM mapping"""
+        try:
+            self.send_slam_command("mapping", "start")
+        except Exception as e:
+            print(f"DEBUG: Exception in start_mapping: {e}")
+            import traceback
+            traceback.print_exc()
+            error_dialog = Gtk.MessageDialog(
+                parent=self,
+                flags=0,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="Error starting mapping"
+            )
+            error_dialog.format_secondary_text(str(e))
+            error_dialog.run()
+            error_dialog.destroy()
+    
+    def stop_mapping(self, widget):
+        """Stop SLAM mapping"""
+        print("DEBUG: stop_mapping called")
+        try:
+            self.send_slam_command("mapping", "stop")
+        except Exception as e:
+            print(f"DEBUG: Exception in stop_mapping: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def save_map(self, widget):
+        """Save current map"""
+        print("DEBUG: save_map called")
+        try:
+            self.send_slam_command("mapping", "save")
+        except Exception as e:
+            print(f"DEBUG: Exception in save_map: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def start_relocation(self, widget):
+        """Start relocation in saved map"""
+        try:
+            self.send_slam_command("relocation", "start")
+        except Exception as e:
+            print(f"DEBUG: Exception in start_relocation: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def visualize_slam(self, widget, mode="mapping"):
+        """Launch RViz2 to visualize G1 SLAM data"""
+        config_path = f"~/unitree-robot-control-suite/g1_slam_{mode}.rviz"
+        title = "Mapping" if mode == "mapping" else "Relocation"
+        window_title = f"G1 SLAM {title} Visualization"
+        try:
+            # Publish a static transform to correct for inverted lidar mounting per Unitree documentation
+            # Documentation states: lidar is inverted, position relative to robot: (-0.0, 0.0, -0.47618), pitch: -2.3°
+            # 180° rotation around X axis (quaternion: 1,0,0,0) corrects for inverted mounting
+            # Z translation: -1.25m (translate down from lidar at 125cm to ground level at 0cm)
+            # From map (lidar frame, inverted) to map_corrected (corrected orientation at ground level)
+            transform_cmd = 'source /opt/ros/humble/setup.bash && source ~/unitree_ros2/cyclonedds_ws/install/setup.bash && source ~/unitree_ros2/setup.sh && ros2 run tf2_ros static_transform_publisher 0 0 -1.25 1 0 0 0 map map_corrected > /dev/null 2>&1 &'
+            
+            cmd = f'''{transform_cmd}
+sleep 0.5
+echo "📊 G1 SLAM {title} Visualization (RViz2)"
+echo "=========================================="
+echo "Lidar: Livox MID360 (inverted mount)"
+echo "Robot: 192.168.123.164"
+echo "Topic: /unitree/slam_{mode}/points"
+echo "Transform: map -> map_corrected (fixing inverted coordinates)"
+echo "=========================================="
+echo ""
+echo "Starting RViz2..."
+echo ""
+source /opt/ros/humble/setup.bash && source ~/unitree_ros2/cyclonedds_ws/install/setup.bash && source ~/unitree_ros2/setup.sh && rviz2 -d "{config_path}"
+exec bash'''
+            
+            subprocess.Popen([
+                "gnome-terminal",
+                f"--title={window_title}",
+                "--",
+                "bash",
+                "-c",
+                cmd
+            ])
+        except Exception as e:
+            print(f"Error launching RViz2: {e}")
+    
+    def run_keydemo_on_robot(self, widget):
+        """SSH to robot and run keyDemo for interactive SLAM control"""
+        robot_ip = "192.168.123.164"
+        # keyDemo typically runs with eth0 as network interface (network segment 123)
+        # The user can change this if needed, but eth0 is standard for robot's wired connection
+        network_interface = "eth0"
+        
+        try:
+            cmd = f'''echo "🎮 G1 SLAM keyDemo (Robot Terminal)"
+echo "=========================================="
+echo "Robot: {robot_ip}"
+echo "Program: keyDemo"
+echo "Interface: {network_interface}"
+echo "=========================================="
+echo ""
+echo "SSH connection..."
+echo ""
+echo "Command: ssh -t unitree@{robot_ip} 'cd /home/unitree/unitree_slam_example/build && ./keyDemo {network_interface}'"
+echo ""
+ssh -t unitree@{robot_ip} 'cd /home/unitree/unitree_slam_example/build && ./keyDemo {network_interface}'
+exec bash'''
+            
+            subprocess.Popen([
+                "gnome-terminal",
+                "--title=G1 keyDemo (Robot)",
+                "--",
+                "bash",
+                "-c",
+                cmd
+            ])
+        except Exception as e:
+            print(f"Error launching keyDemo on robot: {e}")
+            error_dialog = Gtk.MessageDialog(
+                parent=self,
+                flags=0,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="Error launching keyDemo"
+            )
+            error_dialog.format_secondary_text(str(e))
+            error_dialog.run()
+            error_dialog.destroy()
+    
+    def visualize_lidar(self, widget):
+        """Launch RViz2 with G1 lidar visualization"""
+        config_path = "~/unitree-robot-control-suite/g1_lidar.rviz"
+        try:
+            # Publish a static transform to correct for inverted lidar mounting
+            # 180° rotation around X axis (quaternion: 1,0,0,0) corrects for inverted mounting
+            # Z translation: +1.25m (raw lidar frame needs positive translation to reach ground level)
+            # From livox_frame (raw lidar frame, inverted) to livox_frame_corrected (corrected orientation)
+            transform_cmd = 'source /opt/ros/humble/setup.bash && source ~/unitree_ros2/cyclonedds_ws/install/setup.bash && source ~/unitree_ros2/setup.sh && ros2 run tf2_ros static_transform_publisher 0 0 1.25 1 0 0 0 livox_frame livox_frame_corrected > /dev/null 2>&1 &'
+            
+            cmd = f'''{transform_cmd}
+sleep 0.5
+echo "🔍 G1 Lidar Visualization (RViz2)"
+echo "=========================================="
+echo "Lidar: Livox MID360 (inverted mount)"
+echo "Robot: 192.168.123.164"
+echo "Topic: /utlidar/cloud_livox_mid360"
+echo "Transform: livox_frame -> livox_frame_corrected (fixing inverted coordinates)"
+echo "=========================================="
+echo ""
+echo "Starting RViz2..."
+echo ""
+source /opt/ros/humble/setup.bash && source ~/unitree_ros2/cyclonedds_ws/install/setup.bash && source ~/unitree_ros2/setup.sh && rviz2 -d "{config_path}"
+exec bash'''
+            
+            subprocess.Popen([
+                "gnome-terminal",
+                "--title=G1 Lidar Visualization",
+                "--",
+                "bash",
+                "-c",
+                cmd
+            ])
+        except Exception as e:
+            print(f"Error launching RViz2: {e}")
     
     def on_return(self, widget):
         self.destroy()
