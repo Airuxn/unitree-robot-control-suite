@@ -11,6 +11,8 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib
 
 # Paths
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+MUJOCO_BUILD_DIR = os.path.expanduser('~/unitree_mujoco/simulate/build')
 DESKTOP = os.path.expanduser('~/Desktop')
 SDK_ARM_DEMO = 'cd ~/unitree_sdk2_python/example/g1/high_level && DDS_DOMAIN=0 DDS_INTERFACE=enp3s0 DDS_PARTICIPANT_INDEX=0 python3 g1_arm7_sdk_dds_example.py; exec bash'
 CAMERA_VIEW = 'source /opt/ros/humble/setup.bash; source ~/unitree_ros2/cyclonedds_ws/install/setup.bash; source ~/unitree_ros2/setup.sh; ros2 run rqt_image_view rqt_image_view /camera/image_raw; exec bash'
@@ -51,6 +53,89 @@ def apply_css():
         style_provider,
         Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
     )
+
+# Configuration management for GO2W connection settings
+CONFIG_FILE = os.path.expanduser("~/.unitree_go2w_config.json")
+ETHERNET_IP = "192.168.123.18"
+
+def load_go2w_config():
+    """Load GO2W connection configuration from file"""
+    default_config = {
+        "connection_method": "ethernet",  # "ethernet" or "wifi"
+        "wifi_ip": ""
+    }
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                config = json.load(f)
+                # Ensure all keys exist
+                for key in default_config:
+                    if key not in config:
+                        config[key] = default_config[key]
+                return config
+    except Exception as e:
+        print(f"Error loading config: {e}")
+    return default_config
+
+def save_go2w_config(config):
+    """Save GO2W connection configuration to file"""
+    try:
+        with open(CONFIG_FILE, 'w') as f:
+            json.dump(config, f, indent=2)
+    except Exception as e:
+        print(f"Error saving config: {e}")
+
+def get_go2w_robot_ip():
+    """Get the current robot IP based on connection method"""
+    config = load_go2w_config()
+    if config["connection_method"] == "wifi" and config["wifi_ip"]:
+        return config["wifi_ip"]
+    return ETHERNET_IP
+
+def get_go2w_network_interface():
+    """Get the appropriate network interface for GO2W connection"""
+    config = load_go2w_config()
+    
+    if config["connection_method"] == "wifi":
+        wifi_ip = config.get("wifi_ip", "")
+        if wifi_ip:
+            # Try to find the interface that can reach the WiFi IP
+            for iface in netifaces.interfaces():
+                if iface.startswith(('lo', 'docker', 'br-')):
+                    continue
+                try:
+                    result = subprocess.run(["ping", "-I", iface, "-c", "1", "-W", "1", wifi_ip], 
+                                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    if result.returncode == 0:
+                        return iface
+                except:
+                    continue
+            # If ping doesn't work, find WiFi interface by name
+            for iface in netifaces.interfaces():
+                if iface.startswith(('wl', 'wlan')):
+                    return iface
+        # Fallback to first WiFi interface
+        for iface in netifaces.interfaces():
+            if iface.startswith(('wl', 'wlan')):
+                return iface
+        return "wlan0"
+    else:
+        # For Ethernet, find the interface that can reach the robot
+        for iface in netifaces.interfaces():
+            if iface.startswith(('lo', 'wl', 'wlan', 'docker', 'br-')):
+                continue
+            try:
+                result = subprocess.run(["ping", "-I", iface, "-c", "1", "-W", "1", ETHERNET_IP], 
+                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if result.returncode == 0:
+                    return iface
+            except:
+                continue
+        # Fallback to common Ethernet interface names
+        for iface in netifaces.interfaces():
+            if iface.startswith(('enp', 'eth')):
+                return iface
+        return "eth0"
 
 class ProgressDialog(Gtk.Dialog):
     def __init__(self, parent, title, message):
@@ -512,7 +597,7 @@ echo "1" > /tmp/network_setup_status
     
     def launch_mujoco_simulation(self, widget):
         """Launch MuJoCo simulation for G1"""
-        command = "cd ~/unitree_mujoco/simulate/build && ./unitree_mujoco -r g1 ../../unitree_robots/g1/scene_29dof_with_hand.xml"
+        command = f"cd {MUJOCO_BUILD_DIR} && ./unitree_mujoco -r g1 ../../unitree_robots/g1/scene_29dof_with_hand.xml"
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -635,7 +720,7 @@ echo "1" > /tmp/network_setup_status
                 "--", 
                 "bash", 
                 "-c", 
-                f"echo '🤖 G1 Autonomous Navigation - Simulation Mode'; echo '=========================================='; echo 'API Key: {api_key[:10]}...'; echo ''; {command}; echo ''; echo 'Press Enter to close...'; read"
+                f"echo '🤖 G1 Autonomous Navigation - Simulation Mode'; echo '=========================================='; echo 'API Key: configured'; echo ''; {command}; echo ''; echo 'Press Enter to close...'; read"
             ])
         except Exception as e:
             print(f"Error launching autonomous simulation: {e}")
@@ -689,7 +774,7 @@ echo "1" > /tmp/network_setup_status
                     "--", 
                     "bash", 
                     "-c", 
-                    f"echo '🔧 G1 Autonomous Navigation - Hardware Mode'; echo '=========================================='; echo 'API Key: {api_key[:10]}...'; echo 'Robot IP: 192.168.123.164'; echo ''; {command}; echo ''; echo 'Press Enter to close...'; read"
+                    f"echo '🔧 G1 Autonomous Navigation - Hardware Mode'; echo '=========================================='; echo 'API Key: configured'; echo 'Robot IP: 192.168.123.164'; echo ''; {command}; echo ''; echo 'Press Enter to close...'; read"
                 ])
             except Exception as e:
                 print(f"Error launching autonomous hardware: {e}")
@@ -1484,7 +1569,7 @@ class GO2WMenuWindow(Gtk.Window):
     def __init__(self, parent):
         Gtk.Window.__init__(self, title="Unitree GO2W-U5 Launcher")
         self.set_border_width(24)
-        self.set_default_size(400, 400)
+        self.set_default_size(400, 500)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0.09, 0.11, 0.13, 1))
         self.connected = False
@@ -1492,9 +1577,56 @@ class GO2WMenuWindow(Gtk.Window):
         self.update_status_label()
         self.parent = parent
         self.network_check_in_progress = False
+        
+        # Load configuration
+        self.config = load_go2w_config()
+        
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
         vbox.set_homogeneous(False)
         self.add(vbox)
+        
+        # Connection method selection
+        conn_frame = Gtk.Frame(label="Connection Method")
+        conn_frame.set_label_align(0.5, 0.5)
+        conn_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        conn_frame.add(conn_box)
+        conn_frame.set_border_width(8)
+        
+        # Radio buttons for connection method
+        self.ethernet_radio = Gtk.RadioButton(label=f"Ethernet ({ETHERNET_IP})")
+        self.wifi_radio = Gtk.RadioButton.new_with_label_from_widget(self.ethernet_radio, "WiFi")
+        conn_box.pack_start(self.ethernet_radio, False, False, 0)
+        conn_box.pack_start(self.wifi_radio, False, False, 0)
+        
+        # Set current selection
+        if self.config["connection_method"] == "wifi":
+            self.wifi_radio.set_active(True)
+        else:
+            self.ethernet_radio.set_active(True)
+        
+        # Connect radio buttons to handler
+        self.ethernet_radio.connect("toggled", self.on_connection_method_changed)
+        self.wifi_radio.connect("toggled", self.on_connection_method_changed)
+        
+        # WiFi IP display and configuration
+        wifi_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        wifi_label = Gtk.Label(label="WiFi IP:")
+        wifi_ip = self.config.get("wifi_ip", "")
+        self.wifi_ip_label = Gtk.Label()
+        if wifi_ip:
+            self.wifi_ip_label.set_markup(f'<span foreground="#00FF00">{wifi_ip}</span>')
+        else:
+            self.wifi_ip_label.set_markup('<span foreground="#FF5555">Not set</span>')
+        wifi_set_btn = Gtk.Button(label="Set WiFi IP")
+        wifi_set_btn.set_size_request(100, 30)
+        wifi_set_btn.connect("clicked", self.on_set_wifi_ip)
+        wifi_box.pack_start(wifi_label, False, False, 0)
+        wifi_box.pack_start(self.wifi_ip_label, True, True, 0)
+        wifi_box.pack_start(wifi_set_btn, False, False, 0)
+        conn_box.pack_start(wifi_box, False, False, 0)
+        
+        vbox.pack_start(conn_frame, False, False, 0)
+        
         # Add network check/setup button
         self.net_btn = Gtk.Button(label="Check/Setup Network Connection")
         self.net_btn.set_size_request(0, 40)
@@ -1530,15 +1662,17 @@ class GO2WMenuWindow(Gtk.Window):
         self.connect("destroy", self.on_destroy)
     
     def update_status_label(self):
+        robot_ip = get_go2w_robot_ip()
         if self.connected:
-            self.status_label.set_markup('<span size="large" weight="bold" foreground="#00FF00">Connected to Unitree GO2W-U5</span>')
+            self.status_label.set_markup(f'<span size="large" weight="bold" foreground="#00FF00">Connected to Unitree GO2W-U5 ({robot_ip})</span>')
         else:
-            self.status_label.set_markup('<span size="large" weight="bold" foreground="#FF5555">Not connected to Unitree GO2W-U5</span>')
+            self.status_label.set_markup(f'<span size="large" weight="bold" foreground="#FF5555">Not connected to Unitree GO2W-U5 ({robot_ip})</span>')
     
     def status_updater(self):
         while self.keep_updating:
             try:
-                result = subprocess.run(["ping", "-c", "1", "-W", "1", "192.168.123.18"], stdout=subprocess.DEVNULL)
+                robot_ip = get_go2w_robot_ip()
+                result = subprocess.run(["ping", "-c", "1", "-W", "1", robot_ip], stdout=subprocess.DEVNULL)
                 connected = (result.returncode == 0)
             except Exception:
                 connected = False
@@ -1547,11 +1681,150 @@ class GO2WMenuWindow(Gtk.Window):
                 GLib.idle_add(self.update_status_label)
             time.sleep(1)
     
+    def on_connection_method_changed(self, widget):
+        """Handle connection method radio button changes"""
+        if self.ethernet_radio.get_active():
+            self.config["connection_method"] = "ethernet"
+        else:
+            self.config["connection_method"] = "wifi"
+        save_go2w_config(self.config)
+        # Update WiFi IP label display
+        wifi_ip = self.config.get("wifi_ip", "")
+        if wifi_ip:
+            self.wifi_ip_label.set_markup(f'<span foreground="#00FF00">{wifi_ip}</span>')
+        else:
+            self.wifi_ip_label.set_markup('<span foreground="#FF5555">Not set</span>')
+        # Update status immediately
+        self.connected = False
+        GLib.idle_add(self.update_status_label)
+    
+    def on_set_wifi_ip(self, widget):
+        """Open dialog to set WiFi IP address"""
+        dialog = Gtk.Dialog(title="Set WiFi IP Address", parent=self, flags=0)
+        dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                          Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        dialog.set_default_size(400, 150)
+        dialog.set_border_width(16)
+        
+        box = dialog.get_content_area()
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box.add(vbox)
+        
+        label = Gtk.Label(label="Enter WiFi IP address:")
+        label.set_halign(Gtk.Align.START)
+        vbox.pack_start(label, False, False, 0)
+        
+        entry = Gtk.Entry()
+        entry.set_text(self.config.get("wifi_ip", ""))
+        entry.set_placeholder_text("e.g., 192.168.1.100")
+        vbox.pack_start(entry, False, False, 0)
+        
+        info_label = Gtk.Label()
+        info_label.set_markup('<span size="small" foreground="#AAAAAA">The app will remember this IP address</span>')
+        info_label.set_halign(Gtk.Align.START)
+        vbox.pack_start(info_label, False, False, 0)
+        
+        dialog.show_all()
+        response = dialog.run()
+        
+        if response == Gtk.ResponseType.OK:
+            wifi_ip = entry.get_text().strip()
+            if wifi_ip:
+                # Validate IP format (basic check)
+                parts = wifi_ip.split('.')
+                if len(parts) == 4 and all(part.isdigit() and 0 <= int(part) <= 255 for part in parts):
+                    self.config["wifi_ip"] = wifi_ip
+                    save_go2w_config(self.config)
+                    self.wifi_ip_label.set_text(wifi_ip)
+                    self.wifi_ip_label.set_markup(f'<span foreground="#00FF00">{wifi_ip}</span>')
+                    
+                    # If WiFi is selected, test connection
+                    if self.wifi_radio.get_active():
+                        self.test_wifi_connection(wifi_ip)
+                else:
+                    error_dialog = Gtk.MessageDialog(
+                        parent=self,
+                        flags=0,
+                        message_type=Gtk.MessageType.ERROR,
+                        buttons=Gtk.ButtonsType.OK,
+                        text="Invalid IP Address"
+                    )
+                    error_dialog.format_secondary_text("Please enter a valid IP address (e.g., 192.168.1.100)")
+                    error_dialog.run()
+                    error_dialog.destroy()
+        
+        dialog.destroy()
+    
+    def test_wifi_connection(self, wifi_ip):
+        """Test WiFi connection and update status"""
+        def test_thread():
+            try:
+                result = subprocess.run(["ping", "-c", "1", "-W", "2", wifi_ip], 
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                connected = (result.returncode == 0)
+                GLib.idle_add(lambda: setattr(self, 'connected', connected))
+                GLib.idle_add(self.update_status_label)
+            except Exception:
+                GLib.idle_add(lambda: setattr(self, 'connected', False))
+                GLib.idle_add(self.update_status_label)
+        
+        threading.Thread(target=test_thread, daemon=True).start()
+    
     def on_destroy(self, *args):
         self.keep_updating = False
     
     def on_check_network(self, widget):
-        # Reuse the same network check logic as G1
+        # Get the current robot IP based on connection method
+        robot_ip = get_go2w_robot_ip()
+        connection_method = self.config.get("connection_method", "ethernet")
+        
+        # For WiFi, just test the connection
+        if connection_method == "wifi":
+            if not self.config.get("wifi_ip"):
+                error_dialog = Gtk.MessageDialog(
+                    parent=self,
+                    flags=0,
+                    message_type=Gtk.MessageType.WARNING,
+                    buttons=Gtk.ButtonsType.OK,
+                    text="WiFi IP Not Set"
+                )
+                error_dialog.format_secondary_text("Please set the WiFi IP address first.")
+                error_dialog.run()
+                error_dialog.destroy()
+                return
+            
+            # Test WiFi connection
+            self.net_btn.set_sensitive(False)
+            progress = ProgressDialog(self, "Testing WiFi Connection", f"Pinging {robot_ip}...")
+            
+            def wifi_test_thread():
+                try:
+                    result = subprocess.run(["ping", "-c", "3", "-W", "2", robot_ip], 
+                                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    connected = (result.returncode == 0)
+                    self.connected = connected
+                    GLib.idle_add(self.update_status_label)
+                    if connected:
+                        GLib.idle_add(progress.set_text, f"✅ Successfully connected to {robot_ip} via WiFi!")
+                    else:
+                        GLib.idle_add(progress.set_text, f"❌ Could not reach {robot_ip} via WiFi.\nPlease check your WiFi connection and IP address.")
+                    time.sleep(2)
+                except Exception as e:
+                    GLib.idle_add(progress.set_text, f"❌ Error: {str(e)}")
+                    time.sleep(2)
+                finally:
+                    GLib.idle_add(progress.destroy)
+                    GLib.idle_add(lambda: self.net_btn.set_sensitive(True))
+            
+            threading.Thread(target=wifi_test_thread, daemon=True).start()
+            progress.show_all()
+            while progress.get_visible():
+                while Gtk.events_pending():
+                    Gtk.main_iteration()
+                time.sleep(0.05)
+            return
+        
+        # For Ethernet, use the existing network setup logic
         if getattr(self, 'network_check_in_progress', False):
             return
         self.network_check_in_progress = True
@@ -1573,11 +1846,11 @@ class GO2WMenuWindow(Gtk.Window):
                 
                 # Try to find an interface that can reach the robot
                 for iface in netifaces.interfaces():
-                    # Skip loopback and wireless interfaces
+                    # Skip loopback and wireless interfaces for Ethernet
                     if iface.startswith(('lo', 'wl', 'wlan')):
                         continue
                     try:
-                        result = subprocess.run(["ping", "-I", iface, "-c", "1", "-W", "1", "192.168.123.18"], 
+                        result = subprocess.run(["ping", "-I", iface, "-c", "1", "-W", "1", robot_ip], 
                                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         if result.returncode == 0:
                             # We found a working interface
@@ -1739,7 +2012,7 @@ fi
                 
                 # Do a final connection check
                 try:
-                    result = subprocess.run(["ping", "-c", "1", "-W", "1", "192.168.123.18"], stdout=subprocess.DEVNULL)
+                    result = subprocess.run(["ping", "-c", "1", "-W", "1", robot_ip], stdout=subprocess.DEVNULL)
                     if result.returncode == 0:
                         setup_success = True
                 except Exception:
@@ -1754,7 +2027,7 @@ fi
                     connection_succeeded = False
                     for _ in range(10):
                         try:
-                            result = subprocess.run(["ping", "-c", "1", "-W", "1", "192.168.123.18"], stdout=subprocess.DEVNULL)
+                            result = subprocess.run(["ping", "-c", "1", "-W", "1", robot_ip], stdout=subprocess.DEVNULL)
                             if result.returncode == 0:
                                 self.connected = True
                                 GLib.idle_add(self.update_status_label)
@@ -1819,17 +2092,19 @@ fi
 
     def show_sdk_examples(self, widget):
         """Show the GO2W C++ SDK examples menu"""
-        examples_menu = GO2WSDKExamplesMenu(self, "192.168.123.18")
+        robot_ip = get_go2w_robot_ip()
+        examples_menu = GO2WSDKExamplesMenu(self, robot_ip)
         examples_menu.show_all()
 
     def show_python_examples(self, widget):
         """Show the GO2W Python SDK examples menu"""
-        examples_menu = GO2WPythonExamplesMenu(self, "192.168.123.18")
+        robot_ip = get_go2w_robot_ip()
+        examples_menu = GO2WPythonExamplesMenu(self, robot_ip)
         examples_menu.show_all()
     
     def launch_mujoco_simulation(self, widget):
         """Launch MuJoCo simulation for GO2W"""
-        command = "cd ~/unitree_mujoco/simulate/build && ./unitree_mujoco -r go2w -s scene_terrain.xml"
+        command = f"cd {MUJOCO_BUILD_DIR} && ./unitree_mujoco -r go2w -s scene_terrain.xml"
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -1844,7 +2119,7 @@ fi
     
     def view_camera(self, widget):
         """Launch camera viewer for GO2W"""
-        script_path = "~/unitree-robot-control-suite/go2w_camera_viewer.py"
+        script_path = os.path.join(APP_DIR, "go2w_camera_viewer.py")
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -1859,7 +2134,7 @@ fi
     
     def visualize_lidar(self, widget):
         """Launch RViz2 with L1 lidar visualization"""
-        config_path = "~/unitree-robot-control-suite/unitree_l1_lidar.rviz"
+        config_path = os.path.join(APP_DIR, "unitree_l1_lidar.rviz")
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -1872,16 +2147,55 @@ fi
         except Exception as e:
             print(f"Error launching RViz2: {e}")
     
+    def view_camera(self, widget):
+        """Launch camera viewer for GO2W"""
+        script_path = os.path.join(APP_DIR, "go2w_camera_viewer.py")
+        network_interface = get_go2w_network_interface()
+        try:
+            subprocess.Popen([
+                "gnome-terminal", 
+                "--title=GO2W Front Camera", 
+                "--", 
+                "bash", 
+                "-c", 
+                f'echo "🎥 GO2W Front Camera Stream"; echo "=========================================="; echo "Running: python3 {script_path} {network_interface}"; echo "=========================================="; echo "Press ESC to close the camera window"; echo ""; python3 "{script_path}" {network_interface}'
+            ])
+        except Exception as e:
+            print(f"Error launching camera viewer: {e}")
+    
     def connect_pc2(self, widget):
-        subprocess.Popen(["nautilus", "sftp://unitree@192.168.123.18/home/unitree"])
-        subprocess.Popen(["gnome-terminal", "--", "bash", "-c", "ssh unitree@192.168.123.18; exec bash"])
+        robot_ip = get_go2w_robot_ip()
+        subprocess.Popen(["nautilus", f"sftp://unitree@{robot_ip}/home/unitree"])
+        subprocess.Popen(["gnome-terminal", "--", "bash", "-c", f"ssh unitree@{robot_ip}; exec bash"])
     
     def ros2_terminal(self, widget):
+        # Get the appropriate network interface
+        network_interface = get_go2w_network_interface()
+        robot_ip = get_go2w_robot_ip()
+        config = load_go2w_config()
+        connection_method = config.get("connection_method", "ethernet")
+        
         # Create a ROS2 launcher script with help menu
-        ros2_script = '''#!/bin/bash
+        ros2_script = f'''#!/bin/bash
 echo "=========================================="
 echo "🤖 ROS2 Environment Launcher"
 echo "=========================================="
+echo "Connection: {connection_method.upper()}"
+echo "Robot IP: {robot_ip}"
+echo "Network Interface: {network_interface}"
+echo "=========================================="
+echo ""
+
+# Set DDS environment variables for Unitree robot communication
+export DDS_DOMAIN=0
+export DDS_INTERFACE={network_interface}
+export DDS_PARTICIPANT_INDEX=0
+
+echo "📡 DDS Configuration:"
+echo "  DDS_DOMAIN=$DDS_DOMAIN"
+echo "  DDS_INTERFACE=$DDS_INTERFACE"
+echo "  DDS_PARTICIPANT_INDEX=$DDS_PARTICIPANT_INDEX"
+echo ""
 
 # Detect ROS2 version
 if [ -f /opt/ros/humble/setup.bash ]; then
@@ -1904,8 +2218,23 @@ if [ -f ~/unitree_ros2/setup.sh ]; then
     source ~/unitree_ros2/setup.sh
 fi
 
+# Override CYCLONEDDS_URI with the correct interface (setup.sh hardcodes enp3s0)
+# CYCLONEDDS_URI takes precedence over DDS_INTERFACE, so we must set it correctly
+export CYCLONEDDS_URI="<CycloneDDS><Domain><General><Interfaces><NetworkInterface name=\\"{network_interface}\\" priority=\\"default\\" multicast=\\"default\\" /></Interfaces></General></Domain></CycloneDDS>"
+
+# Also set DDS variables for consistency
+export DDS_DOMAIN=0
+export DDS_INTERFACE={network_interface}
+export DDS_PARTICIPANT_INDEX=0
+
 echo "✅ ROS2 $ROS_VERSION_NAME sourced successfully"
 echo "📍 Current directory: $(pwd)"
+echo ""
+echo "📡 DDS Configuration (after overriding setup.sh):"
+echo "  DDS_DOMAIN=$DDS_DOMAIN"
+echo "  DDS_INTERFACE=$DDS_INTERFACE"
+echo "  DDS_PARTICIPANT_INDEX=$DDS_PARTICIPANT_INDEX"
+echo "  CYCLONEDDS_URI configured for interface: {network_interface}"
 echo ""
 
 # Show ROS2 help menu
@@ -2151,7 +2480,8 @@ class GO2WStreamsMenu(Gtk.Window):
     
     def view_camera(self, widget):
         """Launch camera viewer for GO2W"""
-        script_path = "~/unitree-robot-control-suite/go2w_camera_viewer.py"
+        script_path = os.path.join(APP_DIR, "go2w_camera_viewer.py")
+        network_interface = get_go2w_network_interface()
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -2159,14 +2489,14 @@ class GO2WStreamsMenu(Gtk.Window):
                 "--", 
                 "bash", 
                 "-c", 
-                f'echo "🎥 GO2W Front Camera Stream"; echo "=========================================="; echo "Running: python3 {script_path} enp3s0"; echo "=========================================="; echo "Press ESC to close the camera window"; echo ""; python3 "{script_path}" enp3s0'
+                f'echo "🎥 GO2W Front Camera Stream"; echo "=========================================="; echo "Running: python3 {script_path} {network_interface}"; echo "=========================================="; echo "Press ESC to close the camera window"; echo ""; python3 "{script_path}" {network_interface}'
             ])
         except Exception as e:
             print(f"Error launching camera viewer: {e}")
     
     def visualize_lidar(self, widget):
         """Launch RViz2 with L1 lidar visualization"""
-        config_path = "~/unitree-robot-control-suite/unitree_l1_lidar.rviz"
+        config_path = os.path.join(APP_DIR, "unitree_l1_lidar.rviz")
         try:
             subprocess.Popen([
                 "gnome-terminal", 
@@ -2191,6 +2521,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0.09, 0.11, 0.13, 1))
         self.parent = parent
+        self.robot_ip = get_go2w_robot_ip()
         
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
         vbox.set_homogeneous(False)
@@ -2309,7 +2640,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
         """Start XT16 Lidar Driver"""
         try:
             # Create a wrapper that sources ROS and runs the command
-            cmd = 'echo "Command: ssh -t unitree@192.168.123.18 \'cd /unitree/module/unitree_slam/bin && ./xt16_driver eth0\'"; echo ""; echo "📡 Starting XT16 Lidar Driver"; echo "=========================================="; echo "Robot: 192.168.123.18"; echo "Lidar: 192.168.123.20"; echo "Topic: rt/unitree/slam_lidar/points"; echo "=========================================="; echo ""; echo "Connecting and starting driver..."; echo ""; ssh -t unitree@192.168.123.18 \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./xt16_driver eth0"\'; exec bash'
+            cmd = f'echo "Command: ssh -t unitree@{self.robot_ip} \'cd /unitree/module/unitree_slam/bin && ./xt16_driver eth0\'"; echo ""; echo "📡 Starting XT16 Lidar Driver"; echo "=========================================="; echo "Robot: {self.robot_ip}"; echo "Lidar: 192.168.123.20"; echo "Topic: rt/unitree/slam_lidar/points"; echo "=========================================="; echo ""; echo "Connecting and starting driver..."; echo ""; ssh -t unitree@{self.robot_ip} \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./xt16_driver eth0"\'; exec bash'
             subprocess.Popen([
                 "gnome-terminal", 
                 "--title=XT16 Lidar Driver", 
@@ -2324,7 +2655,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
     def start_slam_service(self, widget):
         """Start SLAM Service"""
         try:
-            cmd = 'echo "Command: ssh -t unitree@192.168.123.18 \'cd /unitree/module/unitree_slam/bin && ./unitree_slam\'"; echo ""; echo "🤖 Starting SLAM Service"; echo "=========================================="; echo "Robot: 192.168.123.18"; echo "Service: unitree_slam"; echo "=========================================="; echo ""; echo "Connecting and starting SLAM service..."; echo ""; ssh -t unitree@192.168.123.18 \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./unitree_slam"\'; exec bash'
+            cmd = f'echo "Command: ssh -t unitree@{self.robot_ip} \'cd /unitree/module/unitree_slam/bin && ./unitree_slam\'"; echo ""; echo "🤖 Starting SLAM Service"; echo "=========================================="; echo "Robot: {self.robot_ip}"; echo "Service: unitree_slam"; echo "=========================================="; echo ""; echo "Connecting and starting SLAM service..."; echo ""; ssh -t unitree@{self.robot_ip} \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./unitree_slam"\'; exec bash'
             subprocess.Popen([
                 "gnome-terminal", 
                 "--title=SLAM Service", 
@@ -2339,7 +2670,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
     def start_keydemo(self, widget):
         """Start KeyDemo for mapping control"""
         try:
-            cmd = 'echo "Command: ssh -t unitree@192.168.123.18 \'cd /unitree/module/unitree_slam/bin && ./keyDemo eth0\'"; echo ""; echo "🕹️ SLAM KeyDemo - Mapping Control"; echo "=========================================="; echo "Controls:"; echo "  q - Start mapping"; echo "  w - End mapping and save"; echo "  a - Start relocation"; echo "  s - Add pose to task list"; echo "  d - Execute task list"; echo "  f - Clear task list"; echo "  z - Pause navigation"; echo "  x - Resume navigation"; echo "=========================================="; echo ""; echo "Connecting and starting KeyDemo..."; echo ""; ssh -t unitree@192.168.123.18 \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./keyDemo eth0"\'; exec bash'
+            cmd = f'echo "Command: ssh -t unitree@{self.robot_ip} \'cd /unitree/module/unitree_slam/bin && ./keyDemo eth0\'"; echo ""; echo "🕹️ SLAM KeyDemo - Mapping Control"; echo "=========================================="; echo "Controls:"; echo "  q - Start mapping"; echo "  w - End mapping and save"; echo "  a - Start relocation"; echo "  s - Add pose to task list"; echo "  d - Execute task list"; echo "  f - Clear task list"; echo "  z - Pause navigation"; echo "  x - Resume navigation"; echo "=========================================="; echo ""; echo "Connecting and starting KeyDemo..."; echo ""; ssh -t unitree@{self.robot_ip} \'/bin/bash -c "source /opt/ros/foxy/setup.bash && export LD_LIBRARY_PATH=/usr/local/lib:/opt/ros/foxy/lib:$LD_LIBRARY_PATH && cd /unitree/module/unitree_slam/bin && ./keyDemo eth0"\'; exec bash'
             subprocess.Popen([
                 "gnome-terminal", 
                 "--title=SLAM KeyDemo - Mapping Control", 
@@ -2353,7 +2684,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
     
     def visualize_slam(self, widget, mode="mapping"):
         """Launch RViz2 to visualize XT16 SLAM data on laptop"""
-        config_path = f"~/unitree-robot-control-suite/hesai_xt16_{mode}.rviz"
+        config_path = os.path.join(APP_DIR, f"hesai_xt16_{mode}.rviz")
         title = "Mapping" if mode == "mapping" else "Navigation/Relocation"
         window_title = f"XT16 SLAM {title} Visualization"
         try:
@@ -2363,7 +2694,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
                 "--", 
                 "bash", 
                 "-c", 
-                f'echo "📊 XT16 SLAM {title} Visualization (RViz2)"; echo "=========================================="; echo "Config: Official Unitree {mode}.rviz"; echo "Lidar: XT16 (Hesai)"; echo "Robot: 192.168.123.18"; echo "=========================================="; echo ""; echo "Starting RViz2..."; echo ""; source /opt/ros/humble/setup.bash && source ~/unitree_ros2/cyclonedds_ws/install/setup.bash && source ~/unitree_ros2/setup.sh && rviz2 -d "{config_path}"'
+                f'echo "📊 XT16 SLAM {title} Visualization (RViz2)"; echo "=========================================="; echo "Config: Official Unitree {mode}.rviz"; echo "Lidar: XT16 (Hesai)"; echo "Robot: {self.robot_ip}"; echo "=========================================="; echo ""; echo "Starting RViz2..."; echo ""; source /opt/ros/humble/setup.bash && source ~/unitree_ros2/cyclonedds_ws/install/setup.bash && source ~/unitree_ros2/setup.sh && rviz2 -d "{config_path}"'
             ])
         except Exception as e:
             print(f"Error launching RViz2: {e}")
@@ -2377,7 +2708,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
                 "--", 
                 "bash", 
                 "-c", 
-                'echo "🗺️ Saved SLAM Maps"; echo "=========================================="; echo "Location: /home/unitree/"; echo "=========================================="; echo ""; ssh unitree@192.168.123.18 "cd /home/unitree && ls -lh *.pcd 2>/dev/null || echo \'No maps found. Create a map first!\'; echo \'\'; echo \'Press Enter to close...\'; read"'
+                f'echo "🗺️ Saved SLAM Maps"; echo "=========================================="; echo "Location: /home/unitree/"; echo "=========================================="; echo ""; ssh unitree@{self.robot_ip} "cd /home/unitree && ls -lh *.pcd 2>/dev/null || echo \'No maps found. Create a map first!\'; echo \'\'; echo \'Press Enter to close...\'; read"'
             ])
         except Exception as e:
             print(f"Error viewing maps: {e}")
@@ -2391,14 +2722,14 @@ class GO2WXT16SlamMenu(Gtk.Window):
                 "--", 
                 "bash", 
                 "-c", 
-                '''echo "🔍 Visualizing Saved SLAM Map"; echo "=========================================="; echo "Available maps:"; ssh unitree@192.168.123.18 "cd /home/unitree && ls -lh *.pcd 2>/dev/null || echo 'No maps found!'"; echo ""; echo "Enter map filename (e.g., test.pcd) or press Enter for test.pcd:"; read MAP_NAME; if [ -z "$MAP_NAME" ]; then MAP_NAME="test.pcd"; fi; echo ""; echo "Downloading $MAP_NAME..."; scp unitree@192.168.123.18:/home/unitree/$MAP_NAME /tmp/saved_map.pcd && echo "Map downloaded to /tmp/saved_map.pcd"; echo ""; echo "Opening pcl_viewer..."; pcl_viewer /tmp/saved_map.pcd'''
+                f'''echo "🔍 Visualizing Saved SLAM Map"; echo "=========================================="; echo "Available maps:"; ssh unitree@{self.robot_ip} "cd /home/unitree && ls -lh *.pcd 2>/dev/null || echo 'No maps found!'"; echo ""; echo "Enter map filename (e.g., test.pcd) or press Enter for test.pcd:"; read MAP_NAME; if [ -z "$MAP_NAME" ]; then MAP_NAME="test.pcd"; fi; echo ""; echo "Downloading $MAP_NAME..."; scp unitree@{self.robot_ip}:/home/unitree/$MAP_NAME /tmp/saved_map.pcd && echo "Map downloaded to /tmp/saved_map.pcd"; echo ""; echo "Opening pcl_viewer..."; pcl_viewer /tmp/saved_map.pcd'''
             ])
         except Exception as e:
             print(f"Error visualizing saved map: {e}")
     
     def open_manual(self, widget):
         """Open the autonomous navigation manual"""
-        manual_path = "~/Desktop/GO2W_Autonomous_Navigation_Manual.html"
+        manual_path = os.path.join(DESKTOP, "GO2W_Autonomous_Navigation_Manual.html")
         try:
             subprocess.Popen(["xdg-open", manual_path])
         except Exception as e:
@@ -2785,7 +3116,7 @@ if __name__ == '__main__':
     
     def visualize_slam(self, widget, mode="mapping"):
         """Launch RViz2 to visualize G1 SLAM data"""
-        config_path = f"~/unitree-robot-control-suite/g1_slam_{mode}.rviz"
+        config_path = os.path.join(APP_DIR, f"g1_slam_{mode}.rviz")
         title = "Mapping" if mode == "mapping" else "Relocation"
         window_title = f"G1 SLAM {title} Visualization"
         try:
@@ -2867,7 +3198,7 @@ exec bash'''
     
     def visualize_lidar(self, widget):
         """Launch RViz2 with G1 lidar visualization"""
-        config_path = "~/unitree-robot-control-suite/g1_lidar.rviz"
+        config_path = os.path.join(APP_DIR, "g1_lidar.rviz")
         try:
             # Publish a static transform to correct for inverted lidar mounting
             # 180° rotation around X axis (quaternion: 1,0,0,0) corrects for inverted mounting

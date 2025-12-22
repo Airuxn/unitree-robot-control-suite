@@ -1,9 +1,5 @@
 # Unitree Robot Control Suite
 
-> ⚠️ **UNDER CONSTRUCTION** ⚠️  
-> This application is currently under active development. Some features may be incomplete or subject to change. Use at your own discretion.
-
-
 **Professional Robot Control Interface for Unitree G1 and GO2W Robots**
 
 A comprehensive GUI application for controlling Unitree robots, featuring camera streaming, robotic hand control, autonomous navigation, and SDK integration.
@@ -428,9 +424,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 For support and questions:
+
 - Create an issue on GitHub
-- Contact: [Your contact information]
-- Documentation: Check the `docs/` folder
+- Documentation: see this README and the [`docs/`](docs/) folder
 
 ---
 
