@@ -14,7 +14,7 @@ netifaces==0.11.0
 pyserial==3.5
 
 # System and Utilities
-packaging==21.3
+packaging==26.2
 
 # Unitree SDK2 Python Bindings (must be installed separately)
 # Note: unitree_sdk2py is installed via Unitree SDK2 installation
