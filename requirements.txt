@@ -7,7 +7,7 @@ PyGObject==3.42.1  # GTK3 bindings for Python
 
 # Computer Vision
 opencv-python==4.12.0.88
-numpy==2.2.6
+numpy==2.5.1
 
 # Network and Serial Communication
 netifaces==0.11.0
