@@ -32,6 +32,8 @@ updates:
     ignore:
       - dependency-name: opencv-python
         update-types: ["version-update:semver-major"]
+      - dependency-name: PyGObject
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     labels:
       - dependencies
       - python
