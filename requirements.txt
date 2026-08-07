@@ -3,7 +3,7 @@
 # Python Version: 3.10.12
 
 # Core GUI Framework
-PyGObject==3.42.1  # GTK3 bindings for Python
+PyGObject==3.42.2  # GTK3 bindings for Python
 
 # Computer Vision
 opencv-python==4.14.0.94
