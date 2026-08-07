@@ -6,6 +6,8 @@ GTK3 control UI for **Unitree G1** and **GO2W** robots — camera streaming, Ins
 
 [![CI](https://github.com/Airuxn/unitree-robot-control-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/Airuxn/unitree-robot-control-suite/actions/workflows/ci.yml)
 
+**Quality:** CI (compile, ShellCheck, submodules) · CodeQL · Dependabot
+
 ---
 
 ## Quick start
