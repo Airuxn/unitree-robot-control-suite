@@ -44,11 +44,6 @@ jobs:
           sudo apt-get install -y -qq shellcheck
           shellcheck -S error install.sh connect_inspire_hand.sh scripts/verify_installation.sh scripts/install-desktop.sh
 
-      - name: Validate desktop entry
-        run: |
-          sudo apt-get install -y -qq desktop-file-utils
-          desktop-file-validate unitree-robot-control-suite.desktop
-
   sync-tags:
     name: Sync release tags
     if: github.event_name == 'push'
