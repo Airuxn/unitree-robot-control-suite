@@ -4,9 +4,15 @@ GTK3 control UI for **Unitree G1** and **GO2W** robots — camera streaming, Ins
 
 **Status:** stable · **Requires:** Ubuntu 20.04/22.04, physical G1 or GO2W, SDK paths below · [MIT](LICENSE)
 
+> **Origin:** Built when the G1 was new — among the first units in Belgium, before community docs or vendor support existed. One desktop app to wire SDK2, ROS2, SLAM, sim, and peripherals together.
+
 [![CI](https://github.com/Airuxn/unitree-robot-control-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/Airuxn/unitree-robot-control-suite/actions/workflows/ci.yml)
 
 **Quality:** CI (compile, ShellCheck, submodules) · CodeQL · Dependabot · Vercel `ignoreCommand` waits for CI + CodeQL if hosted on Vercel
+
+**Deep dive:** [Building a control suite when nothing existed yet](docs/BUILDING_WITHOUT_A_COMMUNITY.md) — early G1 context, network layer, G1 vs GO2W architecture, SLAM workflows.
+
+![Main menu](docs/images/main-menu.png)
 
 ---
 

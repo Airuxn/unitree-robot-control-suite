@@ -216,6 +216,7 @@ captures/
 # Icons (allow PNG icons)
 *.png
 !icons/*.png
+!docs/images/*.png
 
 # Serial port logs
 serial_*.log
