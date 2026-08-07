@@ -15,17 +15,21 @@ permissions:
   contents: write
 
 jobs:
-  test:
+  quality:
+    name: Shell + Python (syntax, shellcheck, submodules)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Verify inspire_hand submodule
+        run: test -f inspire_hand/README.md || test -n "$(find inspire_hand -name '*.py' -print -quit)"
 
       - name: Python compile check
         run: |
           python3 -m py_compile unitree_robot_control_suite.py go2w_camera_viewer.py
-          if [ -d inspire_hand ]; then
-            find inspire_hand -name '*.py' -print0 | xargs -0 -r python3 -m py_compile
-          fi
+          find inspire_hand -name '*.py' -print0 | xargs -0 -r python3 -m py_compile
 
       - name: Shell syntax check
         run: |
@@ -34,21 +38,29 @@ jobs:
           bash -n scripts/verify_installation.sh
           bash -n scripts/install-desktop.sh
 
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck install.sh connect_inspire_hand.sh scripts/verify_installation.sh scripts/install-desktop.sh
+
+      - name: Validate desktop entry
+        run: |
+          sudo apt-get install -y -qq desktop-file-utils
+          desktop-file-validate unitree-robot-control-suite.desktop
+
+  sync-tags:
+    name: Sync release tags
+    if: github.event_name == 'push'
+    needs: [quality]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Sync tags to HEAD
-        if: github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
           git tag -fa latest -m "Latest main"
           git push origin refs/tags/latest --force
-          VERSION=""
-          if [ -f app/build.gradle.kts ]; then
-            VERSION=$(grep -m1 'versionName' app/build.gradle.kts | sed 's/.*"\([^"]*\)".*/\1/')
-          elif [ -f package.json ]; then
-            VERSION=$(node -p "require('./package.json').version")
-          fi
-          if [ -n "$VERSION" ]; then
-            git tag -fa "v${VERSION}" -m "Release v${VERSION}"
-            git push origin "refs/tags/v${VERSION}" --force
-          fi
