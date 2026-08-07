@@ -217,6 +217,7 @@ captures/
 *.png
 !icons/*.png
 !docs/images/*.png
+!.github/social-preview.png
 
 # Serial port logs
 serial_*.log
