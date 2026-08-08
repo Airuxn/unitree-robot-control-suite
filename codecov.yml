@@ -1,0 +1,62 @@
+# codecov.yml — Coverage scope for Unitree Robot Control Suite
+#
+# Why the badge is intentionally lower than 100 %
+# ================================================
+# This project is a GTK3 desktop control UI for Unitree G1 / GO2W robots. The
+# bulk of the code (~1 700 statements in unitree_robot_control_suite.py plus the
+# camera viewer and shell tooling) lives in GUI event handlers, ROS2 command
+# builders, SDK2 hardware wrappers, and camera streaming loops. None of that
+# can run in headless CI without a display, a physical robot, the Unitree SDK2
+# stack, or a live camera feed. We therefore exclude those layers from the
+# Codecov project metric and keep coverage scoped to the small set of pure
+# helpers that can be exercised with mocks and temporary files.
+#
+# The remaining test layers are:
+# 1. Unit tests (this badge): pure config/network helpers in
+#    unitree_robot_control_suite.py (the GUI/ROS classes are marked
+#    # pragma: no cover), exercised with mocked GTK/ROS/netifaces.
+# 2. Static checks run in CI on every push:
+#    - Python compile check for all .py files.
+#    - ShellCheck for install.sh, connect_inspire_hand.sh, and scripts/*.sh.
+#    - Submodule verification and Dependabot dependency monitoring.
+# 3. Integration / hardware-in-the-loop / manual tests:
+#    - ROS2 nodes and SDK2 examples are exercised on the lab robot.
+#    - The GTK3 UI is smoke-tested and documented with screenshot tooling
+#      (scripts/capture_screenshots.py, scripts/generate_doc_screenshots.py).
+#
+# See README.md "Testing strategy" for the full picture.
+
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 5%
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+
+ignore:
+  # GUI/ROS/hardware code is excluded at the source level with # pragma: no cover
+  # so the testable helpers in unitree_robot_control_suite.py remain in the metric.
+  # Fully untestable files are listed below.
+  # Standalone camera viewer: needs Unitree SDK2 + a live camera feed.
+  - "go2w_camera_viewer.py"
+  # Shell and Python helpers that are validated by ShellCheck / compile checks.
+  - "scripts/**/*"
+  - "install.sh"
+  - "connect_inspire_hand.sh"
+  # Third-party / submodule code.
+  - "inspire_hand/**/*"
+  # Configuration, documentation, and metadata.
+  - "*.rviz"
+  - "*.desktop"
+  - "*.desktop.in"
+  - "docs/**/*"
+  - ".github/**/*"
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false

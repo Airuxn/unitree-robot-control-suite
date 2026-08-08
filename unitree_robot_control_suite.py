@@ -45,7 +45,7 @@ button:disabled, button:insensitive {
 }
 '''
 
-def apply_css():
+def apply_css():  # pragma: no cover
     style_provider = Gtk.CssProvider()
     style_provider.load_from_data(CSS)
     Gtk.StyleContext.add_provider_for_screen(
@@ -137,7 +137,7 @@ def get_go2w_network_interface():
                 return iface
         return "eth0"
 
-class ProgressDialog(Gtk.Dialog):
+class ProgressDialog(Gtk.Dialog):  # pragma: no cover
     def __init__(self, parent, title, message):
         Gtk.Dialog.__init__(self, title, parent, 0, buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
         self.set_default_size(400, 120)
@@ -160,7 +160,7 @@ class ProgressDialog(Gtk.Dialog):
         self.present()
         return True  # Prevent closing
 
-class MainMenu(Gtk.Window):
+class MainMenu(Gtk.Window):  # pragma: no cover
     def __init__(self):
         Gtk.Window.__init__(self, title="Unitree Robot Control Suite")
         self.set_border_width(24)
@@ -206,7 +206,7 @@ class MainMenu(Gtk.Window):
     def on_connect_inspire_hand(self, widget):
         subprocess.Popen(INSPIRE_HAND_CMD)
 
-class G1MenuWindow(Gtk.Window):
+class G1MenuWindow(Gtk.Window):  # pragma: no cover
     def __init__(self, parent):
         Gtk.Window.__init__(self, title="Unitree G1 Launcher")
         self.set_border_width(24)
@@ -1009,7 +1009,7 @@ exec bash'''
         self.destroy()
         self.parent.show_all()
 
-class SDKExamplesMenu(Gtk.Window):
+class SDKExamplesMenu(Gtk.Window):  # pragma: no cover
     def __init__(self, parent, robot_ip="192.168.123.164"):
         Gtk.Window.__init__(self, title="Unitree SDK Examples")
         self.robot_ip = robot_ip
@@ -1147,7 +1147,7 @@ ssh -t unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && ./test_pub
     def exit_app(self, widget):
         Gtk.main_quit()
 
-class PythonExamplesMenu(Gtk.Window):
+class PythonExamplesMenu(Gtk.Window):  # pragma: no cover
     def __init__(self, parent):
         Gtk.Window.__init__(self, title="Python SDK Examples")
         self.set_border_width(24)
@@ -1203,7 +1203,7 @@ class PythonExamplesMenu(Gtk.Window):
     def exit_app(self, widget):
         Gtk.main_quit()
 
-class GO2WSDKExamplesMenu(Gtk.Window):
+class GO2WSDKExamplesMenu(Gtk.Window):  # pragma: no cover
     def __init__(self, parent, robot_ip="192.168.123.18"):
         Gtk.Window.__init__(self, title="Unitree GO2W C++ SDK Examples")
         self.robot_ip = robot_ip
@@ -1367,7 +1367,7 @@ ssh -t unitree@{robot_ip} 'cd /home/unitree/unitree_sdk2/build/bin && ./test_sub
     def exit_app(self, widget):
         Gtk.main_quit()
 
-class GO2WPythonExamplesMenu(Gtk.Window):
+class GO2WPythonExamplesMenu(Gtk.Window):  # pragma: no cover
     def __init__(self, parent, robot_ip="192.168.123.18"):
         Gtk.Window.__init__(self, title="Unitree GO2W Python SDK Examples")
         self.robot_ip = robot_ip
@@ -1565,7 +1565,7 @@ ssh -t unitree@{self.robot_ip} 'cd /home/unitree/unitree_sdk2_python/example/hel
     def exit_app(self, widget):
         Gtk.main_quit()
 
-class GO2WMenuWindow(Gtk.Window):
+class GO2WMenuWindow(Gtk.Window):  # pragma: no cover
     def __init__(self, parent):
         Gtk.Window.__init__(self, title="Unitree GO2W-U5 Launcher")
         self.set_border_width(24)
@@ -2330,7 +2330,7 @@ exec bash'''
         lidar_window = L1LidarWindow(self)
         lidar_window.show_all()
 
-class L1LidarWindow(Gtk.Window):
+class L1LidarWindow(Gtk.Window):  # pragma: no cover
     def __init__(self, parent):
         Gtk.Window.__init__(self, title="L1 LIDAR Mapping & SLAM")
         self.set_border_width(24)
@@ -2442,7 +2442,7 @@ class L1LidarWindow(Gtk.Window):
         self.hide()
         self.parent.show_all()
 
-class GO2WStreamsMenu(Gtk.Window):
+class GO2WStreamsMenu(Gtk.Window):  # pragma: no cover
     def __init__(self, parent):
         Gtk.Window.__init__(self, title="GO2W Streams")
         self.set_border_width(24)
@@ -2513,7 +2513,7 @@ class GO2WStreamsMenu(Gtk.Window):
         self.destroy()
         self.parent.show_all()
 
-class GO2WXT16SlamMenu(Gtk.Window):
+class GO2WXT16SlamMenu(Gtk.Window):  # pragma: no cover
     def __init__(self, parent):
         Gtk.Window.__init__(self, title="Hesai XT16 Mapping + SLAM")
         self.set_border_width(24)
@@ -2739,7 +2739,7 @@ class GO2WXT16SlamMenu(Gtk.Window):
         self.destroy()
         self.parent.show_all()
 
-class G1SlamMenu(Gtk.Window):
+class G1SlamMenu(Gtk.Window):  # pragma: no cover
     def __init__(self, parent):
         Gtk.Window.__init__(self, title="G1 SLAM & Navigation")
         self.set_border_width(24)
@@ -2908,7 +2908,7 @@ from unitree_api.msg import Response
 import json
 import sys
 
-class SlamCommandPublisher(Node):
+class SlamCommandPublisher(Node):  # pragma: no cover
     def __init__(self):
         super().__init__('g1_slam_command_publisher')
         self.publisher = self.create_publisher(Request, '/api/slam_operate/request', 10)
@@ -2992,7 +2992,7 @@ class SlamCommandPublisher(Node):
             print("  3. The command format might be incorrect")
             print("  4. Check /slam_info topic for status")
 
-def main():
+def main():  # pragma: no cover
     rclpy.init()
     node = SlamCommandPublisher()
     node.send_command({repr(cmd_json)})
@@ -3236,12 +3236,12 @@ exec bash'''
         self.destroy()
         self.parent.show_all()
 
-def main():
+def main():  # pragma: no cover
     apply_css()
     win = MainMenu()
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
     Gtk.main()
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main() 

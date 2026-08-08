@@ -22,6 +22,10 @@ jobs:
         with:
           submodules: recursive
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Verify inspire_hand submodule
         run: test -f inspire_hand/README.md || test -n "$(find inspire_hand -name '*.py' -print -quit)"
 
@@ -42,3 +46,16 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq shellcheck
           shellcheck -S error install.sh connect_inspire_hand.sh scripts/verify_installation.sh scripts/install-desktop.sh
+
+      - name: Run tests with coverage
+        run: |
+          pip install pytest pytest-cov
+          pytest tests/ --cov=. --cov-report=xml --cov-report=term -q
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          verbose: true

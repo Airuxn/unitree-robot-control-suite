@@ -168,10 +168,10 @@ dist/
 # Documentation build
 docs/build/
 
-# Test files
-test_*.py
-*_test.py
-tests/
+# Test files (kept in tests/ directory, not ignored)
+# test_*.py
+# *_test.py
+# tests/
 
 # Coverage reports
 .coverage

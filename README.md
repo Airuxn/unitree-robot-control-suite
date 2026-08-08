@@ -2,11 +2,13 @@
 
 GTK3 control UI for **Unitree G1** and **GO2W** robots — camera streaming, Inspire Hand serial control, SLAM/navigation (Hesai XT16), and Unitree SDK2 integration.
 
-**Status:** stable · **Requires:** Ubuntu 20.04/22.04, physical G1 or GO2W, SDK paths below · [MIT](LICENSE)
+**Status:** stable · **Project age:** started 2025-10-24 (~10 months) · **Requires:** Ubuntu 20.04/22.04, physical G1 or GO2W, SDK paths below · [MIT](LICENSE)
 
 > **Origin:** Built when the G1 was new — among the first units in Belgium, before community docs or vendor support existed. One desktop app to wire SDK2, ROS2, SLAM, sim, and peripherals together.
 
 [![CI](https://github.com/Airuxn/unitree-robot-control-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/Airuxn/unitree-robot-control-suite/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Airuxn/unitree-robot-control-suite/branch/main/graph/badge.svg)](https://codecov.io/gh/Airuxn/unitree-robot-control-suite)
+[![License](https://img.shields.io/github/license/Airuxn/unitree-robot-control-suite)](LICENSE)
 
 **Quality:** CI (compile, ShellCheck, submodules) · CodeQL · Dependabot · Vercel `ignoreCommand` waits for CI + CodeQL if hosted on Vercel
 
@@ -88,6 +90,20 @@ Default robot IP: `192.168.123.164` (user `unitree`). Default Ethernet interface
 
 ---
 
+## Testing strategy
+
+Coverage is scoped to the pure helpers that can run in CI without GTK3, ROS2, or a physical robot. The GUI/ROS/hardware classes in `unitree_robot_control_suite.py` are marked with `# pragma: no cover`, and `codecov.yml` lists the fully untestable files (camera viewer, shell scripts, submodule code, configs, docs).
+
+The three test layers are:
+
+1. **Unit tests** (`tests/`): config load/save, robot IP selection, and network interface selection, with GTK/ROS/netifaces mocked so they run headless in CI.
+2. **Static checks** (CI): Python `py_compile` for all `.py` files, ShellCheck for shell scripts, submodule verification, and Dependabot for dependency updates.
+3. **Integration / hardware-in-the-loop / manual**: ROS2 nodes, SDK2 examples, and the GTK3 UI are exercised on the lab robot; UI screenshots are captured with `scripts/capture_screenshots.py` and `scripts/generate_doc_screenshots.py` for regression documentation.
+
+The Codecov badge reflects the first layer — the testable core helpers. The larger GUI/ROS/hardware layers are validated by the second and third layers, not by the coverage metric.
+
+---
+
 ## Usage
 
 ```bash
@@ -110,6 +126,18 @@ SLAM maps save to `/home/unitree/` on the robot as `.pcd` files. See [docs/INSTA
 Local desktop control for robots on your LAN. Default robot SSH credentials are for lab use — change them on production deployments. Never commit API keys or custom network configs.
 
 See [SECURITY.md](SECURITY.md) for data handling and reporting.
+
+---
+
+## What makes this different
+
+This suite was built when the Unitree G1 was new and community documentation was scarce. The goal was a single desktop UI that wires together SDK2, ROS2, SLAM, MuJoCo simulation, and the Inspire Hand — without waiting for upstream examples to exist.
+
+Lessons learned along the way:
+
+- **Robot control UIs are mostly glue.** The value is in reliable command builders, path assumptions, and network fallback logic — not in novel algorithms.
+- **Hardware projects need layered testing.** Pure helpers get unit tests, shell and Python syntax get static checks, and anything that touches motion or video gets manual on-robot validation.
+- **Fixed install paths are a feature.** Locking SDK locations (`~/unitree_sdk2/`, `~/unitree_ros2/`, etc.) makes the app reproducible across lab machines and reduces "works on my laptop" surprises.
 
 ---
 
